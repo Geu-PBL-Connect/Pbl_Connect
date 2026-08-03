@@ -1,0 +1,38 @@
+name: Frontend Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "frontend/**"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy Frontend
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+
+          script: |
+            cd ${{ secrets.PROJECT_PATH }}
+
+            git fetch origin
+            git reset --hard origin/main
+
+            cd frontend
+
+            npm install
+
+            npm run build
+
+            sudo rm -rf /var/www/pbl/dist/*
+
+            sudo cp -r dist/* /var/www/pbl/dist/
+
+            sudo systemctl reload nginx
