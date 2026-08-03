@@ -69,6 +69,7 @@ router.get('/re-evaluation/list/:phaseId', getReevaluations);
 router.get('/reports/:type', downloadReport);
 router.get('/reports/marks/:pblId', getMarksForPbl);
 router.put('/reports/marks/update', adminUpdateMarks);
+router.get('/pbl', getPbls);
 router.get('/stats', getDashboardStats);
 router.get('/settings', getSettings);
 router.put('/settings', updateSettings);

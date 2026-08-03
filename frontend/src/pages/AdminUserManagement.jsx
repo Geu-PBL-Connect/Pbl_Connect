@@ -27,19 +27,37 @@ const AdminUserManagement = () => {
     headers: { Authorization: `Bearer ${JSON.parse(localStorage.getItem('userInfo'))?.token}` }
   });
 
+
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/users`, getAuthHeader());
-      setUsers(res.data);
+
+      const res = await axios.get(
+        `${import.meta.env.VITE_API_URL}/api/users`,
+        getAuthHeader()
+      );
+
+      console.log("Users API Response:", res.data);
+
+      if (Array.isArray(res.data)) {
+        setUsers(res.data);
+      } else if (Array.isArray(res.data.users)) {
+        setUsers(res.data.users);
+      } else if (Array.isArray(res.data.data)) {
+        setUsers(res.data.data);
+      } else {
+        console.error("Unexpected API response:", res.data);
+        setUsers([]);
+      }
     } catch (err) {
       console.error(err);
+      setUsers([]);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
+useEffect(() => {
     fetchUsers();
   }, []);
 

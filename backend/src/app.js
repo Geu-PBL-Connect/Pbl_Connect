@@ -20,14 +20,14 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
       fontSrc: ["'self'", "fonts.gstatic.com", "data:"],
       imgSrc: ["'self'", "data:", "blob:", "https:"],
-      connectSrc: ["'self'", "http://localhost:5000", "http://localhost:5173", "http://localhost:5174"]
+      connectSrc: ["'self'", "http://localhost:5000", "http://localhost:5173", "http://localhost:5174", "http://13.204.63.185"]
     }
   },
   crossOriginEmbedderPolicy: false, // Prevents loading some external assets if true
 }));
 app.use(cors({
   origin: function (origin, callback) {
-    const allowedOrigins = [process.env.FRONTEND_URL, 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175'];
+    const allowedOrigins = [process.env.FRONTEND_URL, 'http://localhost:5173', 'http://localhost:5174', 'http://localhost:5175', 'http://13.204.63.185'];
     if (!origin || allowedOrigins.includes(origin) || origin.endsWith('vercel.app') || process.env.FRONTEND_URL === '*') {
       callback(null, true);
     } else {
