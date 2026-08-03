@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "frontend/**"
+      - ".github/workflows/frontend.yml"
 
 jobs:
   deploy:
@@ -18,21 +19,14 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-
           script: |
-            cd ${{ secrets.PROJECT_PATH }}
-
+            cd /home/ubuntu/Pbl_Connect || cd ${{ secrets.PROJECT_PATH }}
             git fetch origin
             git reset --hard origin/main
-
             cd frontend
-
             npm install
-
             npm run build
-
+            sudo mkdir -p /var/www/pbl/dist
             sudo rm -rf /var/www/pbl/dist/*
-
             sudo cp -r dist/* /var/www/pbl/dist/
-
             sudo systemctl reload nginx
