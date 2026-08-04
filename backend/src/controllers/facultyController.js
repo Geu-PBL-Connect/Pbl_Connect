@@ -1,4 +1,5 @@
 const prisma = require("../config/db"); // trigger restart
+const crypto = require("crypto");
 
 // @desc    Get teams where faculty is Mentor
 // @route   GET /api/faculty/mentor/teams
@@ -143,7 +144,14 @@ const mentorGradeSubmission = async (req, res, next) => {
 
           // Append the file link to the feedback so it's accessible in Moodle
           if (submission.synopsisUrl) {
-            const portalUrl = `${process.env.BACKEND_URL}/api/files/view/${submission.id}`;
+            const signature = crypto
+              .createHmac("sha256", process.env.JWT_SECRET)
+              .update(submission.id)
+              .digest("hex");
+
+            const portalUrl =
+              `${process.env.BACKEND_URL}/api/files/moodle/` +
+              `${submission.id}/${signature}`;
 
             feedback += `\n\nSubmitted File (PBL Portal): ${portalUrl}`;
           }
