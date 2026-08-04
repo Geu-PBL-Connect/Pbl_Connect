@@ -3,8 +3,6 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const multerS3 = require("multer-s3");
 const crypto = require("crypto");
 const path = require("path");
-const { GetObjectCommand } = require("@aws-sdk/client-s3");
-const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
 let s3Client = null;
 
