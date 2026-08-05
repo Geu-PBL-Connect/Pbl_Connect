@@ -230,13 +230,10 @@ const StudentPhaseSubmission = () => {
                         Assigned Super Mentor:
                       </span>
                       <p className="font-semibold text-gray-800 dark:text-gray-200 mt-0.5">
-                        {team.superMentor?.user?.name ? (
-                          <>
-                            {team.superMentor.user.name}{" "}
-                            <span className="text-xs text-gray-400">
-                              ({team.superMentor.department || team.superMentor.designation || "Faculty"})
-                            </span>
-                          </>
+                        {team.superMentor ? (
+                          <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                            <CheckCircle2 className="w-4 h-4" /> Assigned
+                          </span>
                         ) : (
                           <span className="text-gray-400 italic">Not allocated yet</span>
                         )}

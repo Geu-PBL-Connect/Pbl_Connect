@@ -208,9 +208,9 @@ const StudentDashboard = () => {
                 Mentor: {viewingTeam.mentor?.user?.name ? (
                   <span className="font-semibold text-gray-700 dark:text-gray-300">
                     {viewingTeam.mentor.user.name} 
-                    {(viewingTeam.mentor.venue || viewingTeam.phaseEvaluators?.[0]?.evaluator?.venue) && (
+                    {viewingTeam.mentor.venue && (
                       <span className="ml-2 text-xs bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 px-2 py-0.5 rounded-full font-bold inline-flex items-center gap-1">
-                        <MapPin className="w-3 h-3" /> {viewingTeam.mentor.venue || viewingTeam.phaseEvaluators?.[0]?.evaluator?.venue}
+                        <MapPin className="w-3 h-3" /> {viewingTeam.mentor.venue}
                       </span>
                     )}
                   </span>
