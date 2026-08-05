@@ -157,10 +157,15 @@ const getMoodleCourseUsers = async (courseId) => {
     if (Array.isArray(res.data)) {
       // Return an array of usernames
       return res.data.map(user => String(user.username));
+    } else {
+      console.error(`[MoodleSync] Moodle API error for course ${courseId}:`, res.data);
     }
     return null;
   } catch (err) {
     console.error(`[MoodleSync] Failed to fetch users for course ${courseId}:`, err.message);
+    if (err.response) {
+      console.error(`[MoodleSync] Response data:`, err.response.data);
+    }
     return null;
   }
 };
