@@ -5,12 +5,8 @@ import logoImg from '../assets/Graphic-Era-University-GEU-Dehradun-Logo.jpg';
 
 const Login = () => {
   const navigate = useNavigate();
-  const [step, setStep] = useState('LOGIN'); // LOGIN, OTP, CREATE_PASSWORD
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
-  const [otp, setOtp] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [resetToken, setResetToken] = useState('');
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -42,36 +38,6 @@ const Login = () => {
     }
   };
 
-  const handleRequestOtp = async (e) => {
-    e.preventDefault();
-    if (!identifier) return setError('Please enter your Identifier first.');
-    setLoading(true); setError(''); setMsg('');
-    try {
-      await axios.post('/api/auth/request-otp', { identifier });
-      setMsg('OTP sent to your registered email address.');
-      setStep('OTP');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to request OTP');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async (e) => {
-    e.preventDefault();
-    setLoading(true); setError(''); setMsg('');
-    try {
-      const res = await axios.post('/api/auth/verify-otp', { email: identifier, otp });
-      setResetToken(res.data.resetToken);
-      setStep('CREATE_PASSWORD');
-      setMsg('OTP Verified! Create a new password.');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Invalid OTP');
-    } finally {
-      setLoading(false);
-    }
-  };
-
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center relative overflow-hidden font-sans">
@@ -94,8 +60,7 @@ const Login = () => {
           {error && <div className="mb-6 p-4 bg-red-50/80 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl text-sm font-medium border border-red-100 dark:border-red-800 backdrop-blur-sm">{error}</div>}
           {msg && <div className="mb-6 p-4 bg-green-50/80 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-xl text-sm font-medium border border-green-100 dark:border-green-800 backdrop-blur-sm">{msg}</div>}
 
-          {step === 'LOGIN' && (
-            <form onSubmit={handleStandardLogin} className="space-y-5">
+          <form onSubmit={handleStandardLogin} className="space-y-5">
               <div>
                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Moodle ID</label>
                 <input 
@@ -110,9 +75,6 @@ const Login = () => {
               <div>
                 <div className="flex justify-between items-center mb-1">
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">Password</label>
-                  <button type="button" onClick={handleRequestOtp} className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-800 transition-colors">
-                    Forgot Password?
-                  </button>
                 </div>
                 <input 
                   type="password" 
@@ -129,34 +91,7 @@ const Login = () => {
               >
                 {loading ? 'Signing In...' : 'Sign In'}
               </button>
-            </form>
-          )}
-
-          {step === 'OTP' && (
-            <form onSubmit={handleVerifyOtp} className="space-y-5 fade-in">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">6-Digit OTP</label>
-                <input 
-                  type="text" 
-                  required 
-                  value={otp} 
-                  onChange={(e) => setOtp(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none text-center tracking-widest text-lg font-bold"
-                  placeholder="000000"
-                  maxLength={6}
-                />
-              </div>
-              <button 
-                disabled={loading}
-                className="w-full py-3 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold shadow-lg shadow-blue-500/30 transition-all active:scale-95 disabled:opacity-70"
-              >
-                {loading ? 'Verifying...' : 'Verify OTP'}
-              </button>
-              <button type="button" onClick={() => setStep('LOGIN')} className="w-full text-sm text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white font-medium mt-2">
-                Back to Login
-              </button>
-            </form>
-          )}
+          </form>
 
 
 
