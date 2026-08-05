@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Search, X, CheckCircle2, RefreshCw, AlertTriangle, ListChecks } from 'lucide-react';
 
 const AdminReevaluation = () => {
   const [pblList, setPblList] = useState([]);
@@ -7,6 +8,7 @@ const AdminReevaluation = () => {
   const [selectedPblId, setSelectedPblId] = useState('');
   const [selectedPhaseId, setSelectedPhaseId] = useState('');
   const [selectedEvaluatorId, setSelectedEvaluatorId] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState(null);
@@ -234,9 +236,10 @@ const AdminReevaluation = () => {
             <button
               type="submit"
               disabled={uploading || !file || !selectedEvaluatorId}
-              className="px-8 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm shadow disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+              className="px-8 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold text-sm shadow disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap flex items-center gap-1.5"
             >
-              {uploading ? 'Processing...' : '🔄 Assign Re-evaluation'}
+              <RefreshCw className={`w-4 h-4 ${uploading ? 'animate-spin' : ''}`} />
+              {uploading ? 'Processing...' : 'Assign Re-evaluation'}
             </button>
           </form>
 
@@ -244,14 +247,14 @@ const AdminReevaluation = () => {
           {result && (
             <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl">
               <p className="text-sm font-bold text-green-700 dark:text-green-400">{result.message}</p>
-              <div className="flex gap-6 mt-2 text-sm text-green-600">
-                <span>✅ New: {result.created}</span>
-                <span>🔄 Updated: {result.updated}</span>
-                <span>📋 Total: {result.total}</span>
+              <div className="flex gap-6 mt-2 text-sm text-green-600 dark:text-green-300">
+                <span className="inline-flex items-center gap-1"><CheckCircle2 className="w-4 h-4 text-green-600" /> New: {result.created}</span>
+                <span className="inline-flex items-center gap-1"><RefreshCw className="w-4 h-4 text-blue-600" /> Updated: {result.updated}</span>
+                <span className="inline-flex items-center gap-1"><ListChecks className="w-4 h-4 text-purple-600" /> Total: {result.total}</span>
               </div>
               {result.notFound?.length > 0 && (
                 <div className="mt-2">
-                  <p className="text-xs font-bold text-red-600">⚠️ Not Found ({result.notFound.length}):</p>
+                  <p className="text-xs font-bold text-red-600 inline-flex items-center gap-1"><AlertTriangle className="w-3.5 h-3.5" /> Not Found ({result.notFound.length}):</p>
                   <p className="text-xs text-red-500">{result.notFound.join(', ')}</p>
                 </div>
               )}
@@ -264,7 +267,7 @@ const AdminReevaluation = () => {
       {selectedPhaseId && absentees.length > 0 && (
         <div className="bg-red-50 dark:bg-red-900/10 p-6 rounded-2xl shadow-sm border border-red-100 dark:border-red-900/30">
           <h3 className="text-lg font-bold text-red-800 dark:text-red-400 mb-4 flex items-center gap-2">
-            ⚠️ Absent Students ({absentees.length})
+            <AlertTriangle className="w-5 h-5 text-red-600" /> Absent Students ({absentees.length})
           </h3>
           <p className="text-sm text-red-600 dark:text-red-300 mb-4">
             These students were marked absent in this phase. Select an evaluator in Step ③ above, then click unlock to assign them.
@@ -292,9 +295,31 @@ const AdminReevaluation = () => {
       {/* Existing Re-evaluations Table */}
       {selectedPhaseId && (
         <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
-          <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-4">
-            Assigned Re-evaluations ({reevalList.length})
-          </h3>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+            <h3 className="text-lg font-bold text-gray-800 dark:text-white">
+              Assigned Re-evaluations ({reevalList.length})
+            </h3>
+            {reevalList.length > 0 && (
+              <div className="relative w-full sm:w-72">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search student, enrollment, evaluator..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-lg dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
           {listLoading ? (
             <p className="text-gray-500 text-center py-8">Loading...</p>
           ) : reevalList.length === 0 ? (
@@ -312,7 +337,17 @@ const AdminReevaluation = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                  {reevalList.map((r, idx) => (
+                  {reevalList
+                    .filter(r => {
+                      if (!searchQuery.trim()) return true;
+                      const q = searchQuery.toLowerCase();
+                      return (
+                        r.student?.enrollmentNumber?.toLowerCase().includes(q) ||
+                        r.student?.user?.name?.toLowerCase().includes(q) ||
+                        r.evaluator?.user?.name?.toLowerCase().includes(q)
+                      );
+                    })
+                    .map((r, idx) => (
                     <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                       <td className="px-4 py-3 text-gray-500">{idx + 1}</td>
                       <td className="px-4 py-3 font-medium text-gray-800 dark:text-white">{r.student?.enrollmentNumber}</td>

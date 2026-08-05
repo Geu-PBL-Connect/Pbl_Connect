@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { MapPin, CheckCircle2, Clock, Mail, BookOpen, ArrowRight } from 'lucide-react';
 
 const StudentDashboard = () => {
   const [teams, setTeams] = useState([]);
@@ -207,7 +208,11 @@ const StudentDashboard = () => {
                 Mentor: {viewingTeam.mentor?.user?.name ? (
                   <span className="font-semibold text-gray-700 dark:text-gray-300">
                     {viewingTeam.mentor.user.name} 
-                    {(viewingTeam.mentor.venue || viewingTeam.phaseEvaluators?.[0]?.evaluator?.venue) && <span className="ml-2 text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">📍 {viewingTeam.mentor.venue || viewingTeam.phaseEvaluators?.[0]?.evaluator?.venue}</span>}
+                    {(viewingTeam.mentor.venue || viewingTeam.phaseEvaluators?.[0]?.evaluator?.venue) && (
+                      <span className="ml-2 text-xs bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 px-2 py-0.5 rounded-full font-bold inline-flex items-center gap-1">
+                        <MapPin className="w-3 h-3" /> {viewingTeam.mentor.venue || viewingTeam.phaseEvaluators?.[0]?.evaluator?.venue}
+                      </span>
+                    )}
                   </span>
                 ) : (
                   <span className="italic">Not assigned yet</span>
@@ -239,12 +244,14 @@ const StudentDashboard = () => {
                 {viewingTeam.leaderId === m.student.id ? (
                   <span className="ml-auto text-xs font-bold text-white bg-green-500 px-2 py-1 rounded">Leader</span>
                 ) : (
-                  isLeader && !isDeadlinePassed && (
-                    m.status === 'REMOVAL_REQUESTED' ? (
-                      <span className="ml-auto text-xs text-red-500 font-bold px-2 py-1">Removal Pending</span>
-                    ) : (
-                      <button onClick={() => removeMember(viewingTeam.id, m.studentId)} className="ml-auto text-xs text-red-500 hover:text-red-700 font-bold bg-red-50 hover:bg-red-100 p-1.5 rounded transition">Remove</button>
-                    )
+                  isLeader && !isDeadlinePassed && m.status === 'ACTIVE' && (
+                    <button 
+                      onClick={() => handleRequestMemberRemoval(m.student.id)}
+                      className="ml-auto text-xs text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 px-2 py-1 rounded transition"
+                      title="Request Member Removal"
+                    >
+                      Remove
+                    </button>
                   )
                 )}
               </div>
@@ -275,17 +282,17 @@ const StudentDashboard = () => {
             </div>
           )}
 
-          <h3 className="text-xl font-semibold text-gray-800 dark:text-white mt-10 mb-4">Project Phases & Status</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <h3 className="text-xl font-semibold text-gray-800 dark:text-white mt-8 mb-4">Phase Submissions & Evaluator Timeline</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map(phase => {
+              const sub = viewingTeam.submissions.find(s => {
+                const phaseObj = viewingTeam.pbl.phases?.find(p => p.id === s.phaseId);
+                return phaseObj?.phaseNumber === phase;
+              });
               const phaseConfig = viewingTeam.pbl.phases?.find(p => p.phaseNumber === phase);
               const deadline = phaseConfig?.submissionEnd;
-              const sub = viewingTeam.submissions?.find(s => s.phaseId === phaseConfig?.id);
               const userInfo = JSON.parse(localStorage.getItem('userInfo'));
               const isLeader = viewingTeam.leaderId === userInfo?.studentProfileId;
-              
-              const evaluatorMap = viewingTeam.phaseEvaluators?.find(pe => pe.phaseId === phaseConfig?.id);
-              const evaluator = evaluatorMap?.evaluator;
 
               return (
                 <Link key={phase} to={`/student/phase/${phase}?teamId=${viewingTeam.id}`} className="block group h-full">
@@ -294,9 +301,13 @@ const StudentDashboard = () => {
                       <span className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-lg">P{phase}</span>
                       {sub ? (
                         sub.status === 'GRADED' ? (
-                          <span className="px-3 py-1 bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400 rounded-full text-xs font-bold uppercase tracking-wider">Graded ✔</span>
+                          <span className="px-3 py-1 bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-400 rounded-full text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Graded
+                          </span>
                         ) : (
-                          <span className="px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400 rounded-full text-xs font-bold uppercase tracking-wider">Uploaded ⏳</span>
+                          <span className="px-3 py-1 bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-400 rounded-full text-xs font-bold uppercase tracking-wider inline-flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" /> Uploaded
+                          </span>
                         )
                       ) : (
                         <span className="px-3 py-1 bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 rounded-full text-xs font-semibold">Not Uploaded</span>
@@ -316,8 +327,9 @@ const StudentDashboard = () => {
                         isLeader ? "You (Team Leader) are required to upload the Synopsis and Phase Report." : "Only Team Leader can upload. You can check upload status and grades here."
                       )}
                     </p>
-                    <div className="pt-4 border-t border-gray-100 dark:border-gray-700 text-blue-600 font-medium text-sm flex items-center group-hover:text-blue-700">
-                      {sub ? "View Submission & Grade →" : isLeader ? "Upload Synopsis →" : "Check Phase Status →"}
+                    <div className="pt-4 border-t border-gray-100 dark:border-gray-700 text-blue-600 font-medium text-sm flex items-center gap-1 group-hover:text-blue-700">
+                      {sub ? "View Submission & Grade" : isLeader ? "Upload Synopsis" : "Check Phase Status"}
+                      <ArrowRight className="w-4 h-4" />
                     </div>
                   </div>
                 </Link>
@@ -336,7 +348,7 @@ const StudentDashboard = () => {
       {invitations.length > 0 && (
         <div className="bg-orange-50 dark:bg-orange-900/30 border border-orange-200 dark:border-orange-800 p-6 rounded-2xl shadow-sm mb-6">
           <h3 className="text-xl font-bold text-orange-800 dark:text-orange-400 mb-4 flex items-center gap-2">
-            <span className="text-2xl">📨</span> Pending Team Requests
+            <Mail className="w-5 h-5" /> Pending Team Requests
           </h3>
           <div className="space-y-4">
             {invitations.map(inv => (
@@ -377,7 +389,7 @@ const StudentDashboard = () => {
 
       {pbls.length === 0 ? (
         <div className="text-center p-12 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-dashed border-gray-200 dark:border-gray-700">
-          <div className="text-5xl mb-3">📚</div>
+          <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-3" />
           <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-2">No PBL Subjects Assigned</h3>
           <p className="text-gray-500 max-w-md mx-auto text-sm">
             There are currently no active PBL subjects scheduled for your semester. Check back later or contact your admin.

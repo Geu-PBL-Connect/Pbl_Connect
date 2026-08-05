@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { CheckCircle2, FileText, Paperclip } from 'lucide-react';
 
 const StudentPeerReviews = () => {
   const [tasks, setTasks] = useState([]);
@@ -68,10 +69,10 @@ const StudentPeerReviews = () => {
 
   return (
     <div className="space-y-6 fade-in">
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Peer Reviews</h2>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Anonymously review and grade other teams' projects assigned to you.
           </p>
         </div>
@@ -80,32 +81,32 @@ const StudentPeerReviews = () => {
       {loading ? (
         <div className="p-8 text-center text-gray-500">Loading your peer review tasks...</div>
       ) : tasks.length === 0 ? (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center text-gray-500">
-          <div className="text-4xl mb-3">✅</div>
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-12 text-center text-gray-500">
+          <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
           You have no pending peer review tasks. 
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {tasks.map(task => (
-            <div key={task.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col">
-              <div className="flex justify-between items-start mb-4 border-b pb-4">
+            <div key={task.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 flex flex-col">
+              <div className="flex justify-between items-start mb-4 border-b dark:border-gray-700 pb-4">
                 <div>
-                  <h3 className="text-lg font-bold text-gray-800">Assigned Project (Anonymous)</h3>
+                  <h3 className="text-lg font-bold text-gray-800 dark:text-white">Assigned Project (Anonymous)</h3>
                   <p className="text-sm text-gray-500">Phase {task.phase.phaseNumber}</p>
                 </div>
                 {task.isEvaluated ? (
-                  <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">Evaluated</span>
+                  <span className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 px-2 py-1 rounded text-xs font-bold">Evaluated</span>
                 ) : (
-                  <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-bold">Pending Action</span>
+                  <span className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300 px-2 py-1 rounded text-xs font-bold">Pending Action</span>
                 )}
               </div>
 
               <div className="space-y-3 mb-6 flex-1">
-                <div className="bg-gray-50 p-3 rounded-lg border">
-                  <h4 className="text-sm font-bold text-gray-700 mb-2">Project Resources</h4>
+                <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-lg border dark:border-gray-700">
+                  <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Project Resources</h4>
                   {task.examineeProject.synopsisUrl ? (
-                    <a href={task.examineeProject.synopsisUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm flex items-center gap-2">
-                      📄 View Primary Submission (Synopsis / Link)
+                    <a href={task.examineeProject.synopsisUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline text-sm flex items-center gap-2">
+                      <FileText className="w-4 h-4" /> View Primary Submission (Synopsis / Link)
                     </a>
                   ) : (
                     <p className="text-sm text-gray-500 italic">No primary submission link available.</p>
@@ -117,8 +118,8 @@ const StudentPeerReviews = () => {
                       <ul className="space-y-1">
                         {task.examineeProject.fileUrls.map((url, i) => (
                           <li key={i}>
-                            <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm">
-                              📎 Attachment {i + 1}
+                            <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline text-sm flex items-center gap-1.5">
+                              <Paperclip className="w-3.5 h-3.5" /> Attachment {i + 1}
                             </a>
                           </li>
                         ))}

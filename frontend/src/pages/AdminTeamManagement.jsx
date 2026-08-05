@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Search, X, Users, Sparkles, Trash2, Eye, FileText } from 'lucide-react';
 
 const AdminTeamManagement = () => {
   const [pbls, setPbls] = useState([]);
   const [selectedPbl, setSelectedPbl] = useState('');
   const [teams, setTeams] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
 
   const fetchPbls = async () => {
@@ -277,6 +279,21 @@ const AdminTeamManagement = () => {
     }
   };
 
+  const filteredTeams = teams.filter(team => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    const matchesId = team.teamIdFormatted?.toLowerCase().includes(q);
+    const matchesTitle = team.projectTitle?.toLowerCase().includes(q);
+    const matchesLeader = team.leader?.user?.name?.toLowerCase().includes(q) || team.leader?.enrollmentNumber?.toLowerCase().includes(q);
+    const matchesMentor = team.mentor?.user?.name?.toLowerCase().includes(q);
+    const matchesMember = team.members?.some(m => 
+      m.student?.user?.name?.toLowerCase().includes(q) ||
+      m.student?.enrollmentNumber?.toLowerCase().includes(q) ||
+      m.student?.section?.toLowerCase().includes(q)
+    );
+    return matchesId || matchesTitle || matchesLeader || matchesMentor || matchesMember;
+  });
+
   return (
     <div className="space-y-6 fade-in">
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
@@ -315,7 +332,7 @@ const AdminTeamManagement = () => {
             className={`px-4 py-2 text-white rounded-lg font-medium transition-colors ${
               !selectedPbl || autoFormLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
             }`}>
-            {autoFormLoading ? 'Running...' : '⚡ Auto-Form Teams'}
+            {autoFormLoading ? 'Running...' : 'Auto-Form Teams'}
           </button>
           <button 
             onClick={() => setShowCreateModal(true)}
@@ -326,13 +343,13 @@ const AdminTeamManagement = () => {
       </div>
 
       <div className="bg-white dark:bg-gray-800 shadow-sm rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
-        <div className="mb-6 flex flex-col md:flex-row gap-4 items-start md:items-end">
-          <div className="flex-1 w-full md:w-auto">
+        <div className="mb-6 flex flex-col md:flex-row gap-4 items-start md:items-end justify-between">
+          <div className="w-full md:w-1/2">
             <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Select PBL</label>
             <select 
               value={selectedPbl} 
-              onChange={(e) => { setSelectedPbl(e.target.value); setSelectedTeamIds([]); }}
-              className="w-full md:w-1/2 px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+              onChange={(e) => { setSelectedPbl(e.target.value); setSelectedTeamIds([]); setSearchQuery(''); }}
+              className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
             >
               <option value="">-- Select a PBL to view teams --</option>
               {pbls.map(p => (
@@ -340,16 +357,48 @@ const AdminTeamManagement = () => {
               ))}
             </select>
           </div>
-          {teams.length > 0 && (
-            <div className="flex items-center gap-2 pb-2">
-              <input 
-                type="checkbox" 
-                id="selectAll"
-                checked={selectedTeamIds.length === teams.length}
-                onChange={handleSelectAll}
-                className="w-5 h-5 text-blue-600 rounded border-gray-300 cursor-pointer"
-              />
-              <label htmlFor="selectAll" className="font-medium text-gray-700 dark:text-gray-300 cursor-pointer">Select All Teams</label>
+
+          {selectedPbl && teams.length > 0 && (
+            <div className="w-full md:w-1/2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search by Team ID, Title, Leader, Member, Roll No..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-lg dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <input 
+                  type="checkbox" 
+                  id="selectAll"
+                  checked={filteredTeams.length > 0 && filteredTeams.every(t => selectedTeamIds.includes(t.id))}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      const allIds = Array.from(new Set([...selectedTeamIds, ...filteredTeams.map(t => t.id)]));
+                      setSelectedTeamIds(allIds);
+                    } else {
+                      const filteredSet = new Set(filteredTeams.map(t => t.id));
+                      setSelectedTeamIds(selectedTeamIds.filter(id => !filteredSet.has(id)));
+                    }
+                  }}
+                  className="w-4 h-4 text-blue-600 rounded border-gray-300 cursor-pointer"
+                />
+                <label htmlFor="selectAll" className="text-xs font-semibold text-gray-700 dark:text-gray-300 cursor-pointer">
+                  Select All ({filteredTeams.length})
+                </label>
+              </div>
             </div>
           )}
         </div>
@@ -361,10 +410,17 @@ const AdminTeamManagement = () => {
             <div className="text-center p-8 bg-gray-50 dark:bg-gray-900/50 rounded-xl text-gray-500 border border-dashed border-gray-200">
               No teams formed yet for this PBL.
             </div>
+          ) : filteredTeams.length === 0 ? (
+            <div className="text-center p-8 bg-gray-50 dark:bg-gray-900/50 rounded-xl text-gray-500 border border-gray-200">
+              No teams matching "{searchQuery}"
+            </div>
           ) : (
             <div className="space-y-4">
+              <div className="flex justify-between items-center text-xs text-gray-500 px-1">
+                <span>Showing <strong>{filteredTeams.length}</strong> of <strong>{teams.length}</strong> teams</span>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {teams.map(team => (
+                {filteredTeams.map(team => (
                   <div key={team.id} className={`border ${selectedTeamIds.includes(team.id) ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50'} rounded-xl p-5 shadow-sm hover:border-blue-300 transition-colors relative`}>
                     <div className="absolute top-4 right-4">
                       <input 
@@ -380,7 +436,9 @@ const AdminTeamManagement = () => {
                         <p className="text-xs text-gray-500 mt-1">Created: {new Date(team.createdAt).toLocaleDateString()}</p>
                       </div>
                       <div className="flex gap-2">
-                        <button onClick={() => handleDeleteTeam(team.id)} className="text-gray-400 hover:text-red-500">🗑️</button>
+                        <button onClick={() => handleDeleteTeam(team.id)} className="text-gray-400 hover:text-red-500 p-1 transition-colors" title="Delete Team">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
                     
@@ -408,8 +466,8 @@ const AdminTeamManagement = () => {
                     </div>
 
                     <div className="mb-4 flex justify-between items-center">
-                       <button onClick={() => viewInteractions(team)} className="text-xs text-orange-600 dark:text-orange-400 font-bold hover:underline">
-                         👁️ View Visits
+                       <button onClick={() => viewInteractions(team)} className="text-xs text-orange-600 dark:text-orange-400 font-bold hover:underline inline-flex items-center gap-1">
+                         <Eye className="w-3.5 h-3.5" /> View Visits
                        </button>
                        <button 
                          onClick={() => { setAddMemberTeamId(team.id); setShowAddMemberModal(true); }} 
@@ -574,7 +632,7 @@ const AdminTeamManagement = () => {
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                <span className="text-orange-500">📝</span> Team Interactions: {interactionTeam?.teamIdFormatted}
+                <FileText className="w-6 h-6 text-orange-500" /> Team Interactions: {interactionTeam?.teamIdFormatted}
               </h3>
               <button onClick={() => setShowInteractions(false)} className="text-gray-500 hover:text-gray-700 font-bold">✕</button>
             </div>

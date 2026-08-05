@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { Search, X, Edit, Clock, Trash2 } from 'lucide-react';
 
 const AdminPblManagement = () => {
   const [pbls, setPbls] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({
@@ -122,21 +124,57 @@ const AdminPblManagement = () => {
     }
   };
 
+  const filteredPbls = pbls.filter(p => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      p.subject?.toLowerCase().includes(q) ||
+      p.subjectShort?.toLowerCase().includes(q) ||
+      p.session?.toLowerCase().includes(q) ||
+      p.semester?.toString().includes(q)
+    );
+  });
+
   return (
     <div className="space-y-6 fade-in">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-white">PBL Subjects</h2>
-          <button 
-            onClick={() => {
-              setIsEditing(false);
-              setEditId(null);
-              setFormData({ subject: '', subjectShort: '', semester: 3, session: '', moodleCourseId: '' });
-              setShowModal(true);
-            }}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow flex items-center gap-2"
-          >
-            <span>+ Add New Subject</span>
-          </button>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white">PBL Subjects</h2>
+            <p className="text-xs text-gray-500 mt-0.5">Manage subjects, codes, semesters, and project timelines.</p>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+            <div className="relative w-full sm:w-72">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Search subject, code, session..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-9 pr-8 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-lg dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            <button 
+              onClick={() => {
+                setIsEditing(false);
+                setEditId(null);
+                setFormData({ subject: '', subjectShort: '', semester: 3, session: '', moodleCourseId: '' });
+                setShowModal(true);
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow flex items-center justify-center gap-2 text-xs font-semibold shrink-0"
+            >
+              <span>+ Add New Subject</span>
+            </button>
+          </div>
         </div>
 
       <div className="bg-white dark:bg-gray-800 shadow-sm rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
@@ -156,9 +194,11 @@ const AdminPblManagement = () => {
                 <tr><td colSpan="6" className="p-8 text-center text-gray-500">Loading...</td></tr>
               ) : pbls.length === 0 ? (
                 <tr><td colSpan="6" className="p-8 text-center text-gray-500">No PBLs found. Create one above!</td></tr>
+              ) : filteredPbls.length === 0 ? (
+                <tr><td colSpan="6" className="p-8 text-center text-gray-500">No PBLs matching "{searchQuery}"</td></tr>
               ) : (
                 Object.entries(
-                  pbls.reduce((acc, pbl) => {
+                  filteredPbls.reduce((acc, pbl) => {
                     const session = pbl.session || '2024-2025';
                     if (!acc[session]) acc[session] = [];
                     acc[session].push(pbl);
@@ -195,24 +235,24 @@ const AdminPblManagement = () => {
                           <div className="flex items-center justify-end gap-2">
                             <button 
                               onClick={() => openEditModal(pbl)}
-                              className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors" 
+                              className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-colors flex items-center gap-1 text-sm font-medium" 
                               title="Edit PBL"
                             >
-                              ✏️ Edit
+                              <Edit className="w-4 h-4" /> Edit
                             </button>
                             <button 
                               onClick={() => openTimelineModal(pbl)}
-                              className="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors" 
+                              className="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-lg transition-colors flex items-center gap-1 text-sm font-medium" 
                               title="Set Timeline"
                             >
-                              ⏳ Set Timeline
+                              <Clock className="w-4 h-4" /> Set Timeline
                             </button>
                             <button 
                               onClick={() => handleDeletePbl(pbl.id, pbl.subject)}
                               className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors" 
                               title="Delete PBL Permanently"
                             >
-                              🗑️
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
                         </td>

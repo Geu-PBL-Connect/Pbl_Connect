@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Cloud, AlertTriangle } from 'lucide-react';
 
 const SuperAdminDashboard = () => {
   const [showModal, setShowModal] = useState(false);
@@ -136,7 +137,7 @@ const SuperAdminDashboard = () => {
       {/* Storage Settings Section */}
       <div className="bg-white border border-gray-200 p-8 rounded-2xl shadow-sm">
         <h3 className="text-2xl font-bold text-[#1c1f58] mb-6 flex items-center gap-3">
-          <span className="text-blue-500">☁️</span> AWS S3 Storage Settings
+          <Cloud className="w-6 h-6 text-blue-500" /> AWS S3 Storage Settings
         </h3>
         
         {settingsMsg.text && (
@@ -218,7 +219,7 @@ const SuperAdminDashboard = () => {
 
       <div className="bg-red-900/10 border border-red-500/30 p-8 rounded-2xl">
         <h3 className="text-2xl font-bold text-red-500 flex items-center gap-3 mb-4">
-          <span>⚠️</span> DANGER ZONE
+          <AlertTriangle className="w-6 h-6 text-red-500" /> DANGER ZONE
         </h3>
         <p className="text-red-400 mb-8 font-medium">
           The actions below are irreversible. They will permanently delete data from the database. 

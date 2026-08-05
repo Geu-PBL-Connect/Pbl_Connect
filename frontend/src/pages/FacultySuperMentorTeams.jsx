@@ -13,12 +13,14 @@ import {
   ChevronRight,
   AlertCircle,
   Layers,
+  Search,
 } from "lucide-react";
 
 const FacultySuperMentorTeams = () => {
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedPbl, setSelectedPbl] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Review Modal State
   const [selectedTeam, setSelectedTeam] = useState(null);
@@ -94,10 +96,22 @@ const FacultySuperMentorTeams = () => {
     );
   }
 
-  // Filter PBLs
+  // Filter PBLs & Search Query
   const uniquePbls = [...new Map(teams.map((t) => [t.pbl.id, t.pbl])).values()];
-  const filteredTeams =
-    selectedPbl === "All" ? teams : teams.filter((t) => t.pbl.id === selectedPbl);
+  const filteredTeams = teams.filter((t) => {
+    const matchesPbl = selectedPbl === "All" || t.pbl.id === selectedPbl;
+    if (!matchesPbl) return false;
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    const matchesId = t.teamIdFormatted?.toLowerCase().includes(q);
+    const matchesTitle = t.projectTitle?.toLowerCase().includes(q);
+    const matchesLeader = t.leader?.user?.name?.toLowerCase().includes(q) || t.leader?.enrollmentNumber?.toLowerCase().includes(q);
+    const matchesMember = t.members?.some((m) =>
+      m.student?.user?.name?.toLowerCase().includes(q) ||
+      m.student?.enrollmentNumber?.toLowerCase().includes(q)
+    );
+    return matchesId || matchesTitle || matchesLeader || matchesMember;
+  });
 
   // Metrics
   const totalCount = filteredTeams.length;
@@ -108,9 +122,9 @@ const FacultySuperMentorTeams = () => {
   return (
     <div className="space-y-6 fade-in pb-12">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xs">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xs">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+          <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 shrink-0">
             <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
@@ -123,20 +137,41 @@ const FacultySuperMentorTeams = () => {
           </div>
         </div>
 
-        {uniquePbls.length > 0 && (
-          <select
-            value={selectedPbl}
-            onChange={(e) => setSelectedPbl(e.target.value)}
-            className="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl text-xs bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs font-semibold"
-          >
-            <option value="All">All PBL Programs</option>
-            {uniquePbls.map((pbl) => (
-              <option key={pbl.id} value={pbl.id}>
-                {pbl.subject} (Sem {pbl.semester})
-              </option>
-            ))}
-          </select>
-        )}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+          <div className="relative w-full sm:w-72">
+            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search team, project, student..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-xl dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {uniquePbls.length > 0 && (
+            <select
+              value={selectedPbl}
+              onChange={(e) => setSelectedPbl(e.target.value)}
+              className="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl text-xs bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs font-semibold shrink-0"
+            >
+              <option value="All">All PBL Programs</option>
+              {uniquePbls.map((pbl) => (
+                <option key={pbl.id} value={pbl.id}>
+                  {pbl.subject} (Sem {pbl.semester})
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
       </div>
 
       {/* Metrics Cards */}
@@ -197,10 +232,12 @@ const FacultySuperMentorTeams = () => {
             <Layers className="w-6 h-6" />
           </div>
           <h3 className="text-base font-bold text-gray-900 dark:text-white">
-            No Super Mentored Teams Assigned
+            {searchQuery ? `No teams matching "${searchQuery}"` : "No Super Mentored Teams Assigned"}
           </h3>
           <p className="text-xs text-gray-500 mt-1 max-w-md mx-auto">
-            You do not currently have any teams allocated for Super Mentor quality validation in this PBL.
+            {searchQuery
+              ? "Try adjusting your search criteria or clear the search input."
+              : "You do not currently have any teams allocated for Super Mentor quality validation in this PBL."}
           </p>
         </div>
       ) : (

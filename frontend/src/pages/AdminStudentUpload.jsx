@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
+import { UserPlus, FileSpreadsheet, CheckCircle2, AlertTriangle, ArrowLeft } from 'lucide-react';
 
 const AdminStudentUpload = () => {
   const [excelData, setExcelData] = useState(null);
@@ -165,8 +166,16 @@ const AdminStudentUpload = () => {
     <div className="space-y-6 fade-in max-w-4xl mx-auto">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Bulk Upload Students</h2>
-        <button onClick={() => setShowManualForm(!showManualForm)} className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition shadow-sm font-medium">
-          {showManualForm ? 'Back to Excel Upload' : '➕ Manual Add Student'}
+        <button onClick={() => setShowManualForm(!showManualForm)} className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition shadow-sm font-medium flex items-center gap-1.5 text-sm">
+          {showManualForm ? (
+            <>
+              <ArrowLeft className="w-4 h-4" /> Back to Excel Upload
+            </>
+          ) : (
+            <>
+              <UserPlus className="w-4 h-4" /> Manual Add Student
+            </>
+          )}
         </button>
       </div>
 
@@ -209,11 +218,11 @@ const AdminStudentUpload = () => {
               type="checkbox" 
               id="wipeOld" 
               checked={wipeOldData} 
-              onChange={e => setWipeOldData(e.target.checked)} 
-              className="w-5 h-5 text-red-600 rounded focus:ring-red-500 cursor-pointer"
+              onChange={(e) => setWipeOldData(e.target.checked)} 
+              className="h-4 w-4 text-red-600 rounded border-gray-300"
             />
-            <label htmlFor="wipeOld" className="ml-2 text-sm font-bold text-red-700 dark:text-red-400 cursor-pointer">
-              Wipe Old Students for this Semester
+            <label htmlFor="wipeOld" className="ml-2 text-xs font-bold text-red-700 dark:text-red-400">
+              Wipe previous student records before importing?
             </label>
           </div>
           <div className="flex-1 w-full sm:w-auto">
@@ -228,27 +237,70 @@ const AdminStudentUpload = () => {
         </div>
 
         {showManualForm ? (
-          <form onSubmit={submitManualStudent} className="space-y-4">
+          <form onSubmit={handleManualSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Name *</label>
-                <input required type="text" value={manualStudent.name} onChange={e => setManualStudent({...manualStudent, name: e.target.value})} className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Student Name *</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={manualStudent.name} 
+                  onChange={(e) => setManualStudent({...manualStudent, name: e.target.value})} 
+                  placeholder="e.g. John Doe"
+                  className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Roll No *</label>
-                <input required type="text" value={manualStudent.rollNo} onChange={e => setManualStudent({...manualStudent, rollNo: e.target.value})} className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Roll Number / Student ID *</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={manualStudent.rollNo} 
+                  onChange={(e) => setManualStudent({...manualStudent, rollNo: e.target.value})} 
+                  placeholder="e.g. 2014567"
+                  className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Section *</label>
-                <input required type="text" value={manualStudent.section} onChange={e => setManualStudent({...manualStudent, section: e.target.value})} className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Section *</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={manualStudent.section} 
+                  onChange={(e) => setManualStudent({...manualStudent, section: e.target.value})} 
+                  placeholder="e.g. A or CSE-1"
+                  className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Email (Optional)</label>
-                <input type="email" value={manualStudent.email} onChange={e => setManualStudent({...manualStudent, email: e.target.value})} className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Email Address</label>
+                <input 
+                  type="email" 
+                  value={manualStudent.email} 
+                  onChange={(e) => setManualStudent({...manualStudent, email: e.target.value})} 
+                  placeholder="e.g. student@geu.ac.in"
+                  className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">Moodle ID (Optional)</label>
-                <input type="text" value={manualStudent.moodleId} onChange={e => setManualStudent({...manualStudent, moodleId: e.target.value})} className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Moodle ID</label>
+                <input 
+                  type="text" 
+                  value={manualStudent.moodleId} 
+                  onChange={(e) => setManualStudent({...manualStudent, moodleId: e.target.value})} 
+                  placeholder="e.g. 14205"
+                  className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Moodle Password</label>
+                <input 
+                  type="password" 
+                  value={manualStudent.password} 
+                  onChange={(e) => setManualStudent({...manualStudent, password: e.target.value})} 
+                  placeholder="Default password"
+                  className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                />
               </div>
             </div>
             <div className="flex justify-end pt-4">
@@ -261,7 +313,7 @@ const AdminStudentUpload = () => {
           <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-12 text-center bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition cursor-pointer relative mt-4">
             <input type="file" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
             <div className="flex flex-col items-center pointer-events-none">
-              <span className="text-5xl mb-4">📄</span>
+              <FileSpreadsheet className="w-12 h-12 text-gray-400 mb-4" />
               <span className="text-lg text-gray-700 dark:text-gray-300 font-bold mb-2">Click or Drag & Drop Excel File</span>
               <span className="text-sm text-gray-500">Must contain Name, Roll No, and Section. Email, Moodle ID and Password are optional.</span>
             </div>
@@ -269,7 +321,7 @@ const AdminStudentUpload = () => {
         ) : (
           <div className="space-y-6">
             <div className="p-4 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded-xl text-sm font-medium border border-blue-100 dark:border-blue-800 flex justify-between items-center">
-              <span>✅ File loaded successfully! Found {excelData.length} rows. Please map your columns below.</span>
+              <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> File loaded successfully! Found {excelData.length} rows. Please map your columns below.</span>
               <button onClick={() => setExcelData(null)} className="px-3 py-1 bg-white dark:bg-gray-800 shadow-sm rounded text-gray-600 text-xs font-bold hover:bg-gray-50 border">Cancel / Upload Different File</button>
             </div>
 
@@ -316,7 +368,7 @@ const AdminStudentUpload = () => {
       {skippedStudents.length > 0 && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-6 shadow-sm">
           <h3 className="text-lg font-bold text-red-700 dark:text-red-400 mb-4 flex items-center gap-2">
-            ⚠️ Skipped Students ({skippedStudents.length})
+            <AlertTriangle className="w-5 h-5 text-red-600" /> Skipped Students ({skippedStudents.length})
           </h3>
           <p className="text-sm text-red-600 dark:text-red-300 mb-4">
             These students were skipped because their rows were missing mandatory fields (Name, Roll No, or Section).

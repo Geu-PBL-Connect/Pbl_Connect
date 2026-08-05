@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { GraduationCap } from 'lucide-react';
 
 const SuperAdminSettings = () => {
   const [moodleUrl, setMoodleUrl] = useState('');
-  const [moodleToken, setMoodleToken] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [moodleWSToken, setMoodleWSToken] = useState('');
   const [fetching, setFetching] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
 
@@ -16,11 +17,13 @@ const SuperAdminSettings = () => {
   const fetchSettings = async () => {
     try {
       const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-      const res = await axios.get('/api/super-admin/settings', {
+      const { data } = await axios.get('/api/superadmin/settings', {
         headers: { Authorization: `Bearer ${userInfo.token}` }
       });
-      if (res.data.MOODLE_URL) setMoodleUrl(res.data.MOODLE_URL);
-      if (res.data.MOODLE_API_TOKEN) setMoodleToken(res.data.MOODLE_API_TOKEN);
+      if (data) {
+        setMoodleUrl(data.moodleUrl || '');
+        setMoodleWSToken(data.moodleWSToken || '');
+      }
     } catch (err) {
       console.error(err);
       setError('Failed to load settings');
@@ -31,22 +34,22 @@ const SuperAdminSettings = () => {
 
   const saveSettings = async (e) => {
     e.preventDefault();
+    setSaving(true);
     setMsg('');
     setError('');
     try {
-      setLoading(true);
       const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-      await axios.post('/api/super-admin/settings', {
-        MOODLE_URL: moodleUrl,
-        MOODLE_API_TOKEN: moodleToken
+      const { data } = await axios.post('/api/superadmin/settings', {
+        moodleUrl,
+        moodleWSToken
       }, {
         headers: { Authorization: `Bearer ${userInfo.token}` }
       });
-      setMsg('Settings saved successfully!');
+      setMsg(data.message || 'Settings saved successfully!');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to save settings');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -62,7 +65,9 @@ const SuperAdminSettings = () => {
 
       <div className="bg-white dark:bg-gray-800 shadow-sm rounded-2xl border border-gray-100 dark:border-gray-700 p-8">
         <div className="flex items-center gap-3 mb-6 border-b border-gray-100 dark:border-gray-700 pb-4">
-          <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 text-xl font-bold">🎓</div>
+          <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600">
+            <GraduationCap className="w-5 h-5" />
+          </div>
           <div>
             <h3 className="text-lg font-bold text-gray-800 dark:text-white">Headless Moodle Configuration</h3>
             <p className="text-sm text-gray-500 mt-1">Configure your University's Moodle API credentials to enable auto-login, grading sync, and password sync.</p>

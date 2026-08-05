@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
+import { Search, X, Shuffle } from 'lucide-react';
 
 const AdminFacultyAllocation = () => {
   const [facultyList, setFacultyList] = useState([]);
   const [pbls, setPbls] = useState([]);
   const [selectedPbl, setSelectedPbl] = useState('');
   const [teams, setTeams] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [allocations, setAllocations] = useState({}); // { teamId: { mentorId, evaluatorId } }
 
@@ -277,8 +279,8 @@ const AdminFacultyAllocation = () => {
               <div className="flex flex-col mb-4 gap-4 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700">
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div className="flex gap-2 items-center">
-                    <button onClick={handleRandomMapMentors} className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg shadow-sm font-medium text-sm">
-                      🎲 Random Map Mentors
+                    <button onClick={handleRandomMapMentors} className="px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg shadow-sm font-medium text-sm flex items-center gap-1.5">
+                      <Shuffle className="w-4 h-4" /> Random Map Mentors
                     </button>
                     <button onClick={() => handleAllocationSave('mentor')} className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg shadow-sm font-medium text-sm">Save Mentors</button>
                   </div>
@@ -287,8 +289,8 @@ const AdminFacultyAllocation = () => {
                     {activePhases.map(phase => (
                       <div key={phase.id} className="flex gap-2 items-center border border-gray-200 dark:border-gray-700 p-2 rounded-lg">
                         <span className="text-xs font-bold text-gray-500 dark:text-gray-400">P{phase.phaseNumber}</span>
-                        <button onClick={() => handleRandomMapEvaluators(phase.id, phase.phaseNumber)} className="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white rounded shadow-sm font-medium text-xs" title={`Random Map Phase ${phase.phaseNumber}`}>
-                          🎲 Random Map
+                        <button onClick={() => handleRandomMapEvaluators(phase.id, phase.phaseNumber)} className="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white rounded shadow-sm font-medium text-xs flex items-center gap-1" title={`Random Map Phase ${phase.phaseNumber}`}>
+                          <Shuffle className="w-3.5 h-3.5" /> Random Map
                         </button>
                         <button onClick={() => handleAllocationSave('evaluator', phase.id)} className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded shadow-sm font-medium text-xs">
                           Save Evals
@@ -298,6 +300,36 @@ const AdminFacultyAllocation = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Search Bar */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div className="relative w-full sm:w-80">
+                  <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search by Team ID, Leader..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-8 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-lg dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+                <span className="text-xs text-gray-500">
+                  Showing <strong>{teams.filter(t => {
+                    if (!searchQuery.trim()) return true;
+                    const q = searchQuery.toLowerCase();
+                    return t.teamIdFormatted?.toLowerCase().includes(q) || t.leader?.user?.name?.toLowerCase().includes(q);
+                  }).length}</strong> of <strong>{teams.length}</strong> teams
+                </span>
+              </div>
+
               <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg max-h-[600px] overflow-y-auto">
                 <table className="w-full text-left border-collapse">
                   <thead className="sticky top-0 bg-gray-50 dark:bg-gray-800 shadow-sm z-10">
@@ -311,7 +343,13 @@ const AdminFacultyAllocation = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800">
-                    {teams.map(t => {
+                    {teams
+                      .filter(t => {
+                        if (!searchQuery.trim()) return true;
+                        const q = searchQuery.toLowerCase();
+                        return t.teamIdFormatted?.toLowerCase().includes(q) || t.leader?.user?.name?.toLowerCase().includes(q);
+                      })
+                      .map(t => {
                       const getFacultyLabel = (f, type) => {
                         const pf = f.pblFaculties?.find(pf => pf.pblId === selectedPbl);
                         if (!pf) return f.user.name;

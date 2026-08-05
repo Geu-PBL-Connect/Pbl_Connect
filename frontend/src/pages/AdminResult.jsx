@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Search, X } from 'lucide-react';
 
 const AdminResult = () => {
   const [pbls, setPbls] = useState([]);
   const [selectedPbl, setSelectedPbl] = useState('');
   const [marksData, setMarksData] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [activeMarksPhase, setActiveMarksPhase] = useState(1);
   const [loading, setLoading] = useState(false);
   const [editingStudent, setEditingStudent] = useState(null);
@@ -125,7 +127,7 @@ const AdminResult = () => {
 
       {selectedPbl && !loading && marksData.length > 0 && (
         <div className="bg-white dark:bg-gray-800 shadow-sm rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden">
-           <div className="border-b border-gray-100 dark:border-gray-700 p-4">
+           <div className="border-b border-gray-100 dark:border-gray-700 p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
              <div className="flex gap-2 flex-wrap">
                {activePblDetails?.phases?.map(phase => (
                  <button
@@ -140,6 +142,25 @@ const AdminResult = () => {
                    Phase {phase.phaseNumber} Results
                  </button>
                ))}
+             </div>
+
+             <div className="relative w-full sm:w-72">
+               <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+               <input
+                 type="text"
+                 placeholder="Search student, roll no, team..."
+                 value={searchQuery}
+                 onChange={(e) => setSearchQuery(e.target.value)}
+                 className="w-full pl-9 pr-8 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-lg dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+               />
+               {searchQuery && (
+                 <button
+                   onClick={() => setSearchQuery('')}
+                   className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                 >
+                   <X className="w-3.5 h-3.5" />
+                 </button>
+               )}
              </div>
            </div>
            
@@ -156,7 +177,18 @@ const AdminResult = () => {
                  </tr>
                </thead>
                <tbody>
-                 {marksData.map((m, idx) => {
+                 {marksData
+                   .filter(m => {
+                     if (!searchQuery.trim()) return true;
+                     const q = searchQuery.toLowerCase();
+                     return (
+                       m.teamIdFormatted?.toLowerCase().includes(q) ||
+                       m.name?.toLowerCase().includes(q) ||
+                       m.enrollmentNumber?.toLowerCase().includes(q) ||
+                       m.projectLevel?.toLowerCase().includes(q)
+                     );
+                   })
+                   .map((m, idx) => {
                    const pd = m.phases[activeMarksPhase];
                    return (
                      <tr key={idx} className="border-b dark:border-gray-700 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">

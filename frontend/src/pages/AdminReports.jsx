@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
+import { Search, X, FileSpreadsheet, Users, UserCheck, ShieldCheck, ClipboardCheck, Download } from 'lucide-react';
 
 const AdminReports = () => {
   const [pbls, setPbls] = useState([]);
   const [selectedPbl, setSelectedPbl] = useState('');
   const [teams, setTeams] = useState([]);
   const [facultyList, setFacultyList] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [marksData, setMarksData] = useState([]);
   const [activeMarksPhase, setActiveMarksPhase] = useState(1);
@@ -210,66 +212,66 @@ const AdminReports = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Teams & Members Report */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col h-full hover:shadow-md transition-shadow group">
-            <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
-              👥
+            <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <Users className="w-6 h-6" />
             </div>
             <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2">Teams & Members</h3>
             <p className="text-xs text-gray-600 dark:text-gray-400 flex-1 mb-6">Export a detailed list of all teams and their individual members.</p>
             <button 
               disabled={loading}
               onClick={handleExportTeams}
-              className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-colors shadow-sm disabled:opacity-50 text-xs"
+              className="w-full px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-colors shadow-sm disabled:opacity-50 text-xs flex items-center justify-center gap-2"
             >
-              ⬇️ Download Excel
+              <Download className="w-4 h-4" /> Download Excel
             </button>
           </div>
 
           {/* Mentors Report */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col h-full hover:shadow-md transition-shadow group">
-            <div className="w-14 h-14 rounded-2xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
-              👨‍🏫
+            <div className="w-12 h-12 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <UserCheck className="w-6 h-6" />
             </div>
             <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2">Mentor Allocations</h3>
             <p className="text-xs text-gray-600 dark:text-gray-400 flex-1 mb-6">Export the assignment mapping of teams to mentors.</p>
             <button 
               disabled={loading}
               onClick={handleExportMentors}
-              className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-colors shadow-sm disabled:opacity-50 text-xs"
+              className="w-full px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-colors shadow-sm disabled:opacity-50 text-xs flex items-center justify-center gap-2"
             >
-              ⬇️ Download Excel
+              <Download className="w-4 h-4" /> Download Excel
             </button>
           </div>
 
           {/* Super Mentor Quality Gate Report */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-purple-200 dark:border-purple-800 flex flex-col h-full hover:shadow-md transition-shadow group bg-purple-50/20">
-            <div className="w-14 h-14 rounded-2xl bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
-              🛡️
+            <div className="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <ShieldCheck className="w-6 h-6" />
             </div>
             <h3 className="text-base font-bold text-purple-950 dark:text-purple-200 mb-2">Super Mentor Validation</h3>
             <p className="text-xs text-gray-600 dark:text-gray-400 flex-1 mb-6">Export validation status, project titles, GitHub URLs, and remarks for all teams.</p>
             <button 
               disabled={loading}
               onClick={handleExportSuperMentors}
-              className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition-colors shadow-sm disabled:opacity-50 text-xs"
+              className="w-full px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition-colors shadow-sm disabled:opacity-50 text-xs flex items-center justify-center gap-2"
             >
-              ⬇️ Download Excel
+              <Download className="w-4 h-4" /> Download Excel
             </button>
           </div>
 
           {/* Evaluator Reports (Dynamic) */}
           {activePhases.map(phase => (
             <div key={phase.id} className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col h-full hover:shadow-md transition-shadow group">
-              <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
-                📝
+              <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                <ClipboardCheck className="w-6 h-6" />
               </div>
               <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2">Phase {phase.phaseNumber} Evaluators</h3>
               <p className="text-xs text-gray-600 dark:text-gray-400 flex-1 mb-6">Export evaluator mappings for Phase {phase.phaseNumber}.</p>
               <button 
                 disabled={loading}
                 onClick={() => handleExportEvaluators(phase)}
-                className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-colors shadow-sm disabled:opacity-50 text-xs"
+                className="w-full px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-colors shadow-sm disabled:opacity-50 text-xs flex items-center justify-center gap-2"
               >
-                ⬇️ Download Excel
+                <Download className="w-4 h-4" /> Download Excel
               </button>
             </div>
           ))}
@@ -282,7 +284,7 @@ const AdminReports = () => {
            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b border-gray-100 dark:border-gray-700 pb-4 gap-4">
              <div>
                <h3 className="text-xl font-bold text-gray-800 dark:text-white">Student Marks Overview</h3>
-               <p className="text-sm text-gray-500">View and export marks for each phase</p>
+               <p className="text-xs text-gray-500">View and export marks for each phase</p>
              </div>
              <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-lg overflow-x-auto w-full sm:w-auto">
                {[1, 2, 3].map(p => (
@@ -299,12 +301,31 @@ const AdminReports = () => {
              </div>
            </div>
            
-           <div className="flex justify-end mb-4">
+           <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-4">
+              <div className="relative w-full sm:w-80">
+                <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Search by Team ID, Student, Roll No, Section..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-8 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-lg dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
               <button 
                 onClick={() => handleExportMarks(activeMarksPhase)}
-                className="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-sm flex items-center gap-2 transition-all w-full sm:w-auto justify-center text-xs"
+                className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-sm flex items-center gap-2 transition-all w-full sm:w-auto justify-center text-xs shrink-0"
               >
-                <span>📊</span> Export Phase {activeMarksPhase} Marks to Excel
+                <FileSpreadsheet className="w-4 h-4" /> Export Phase {activeMarksPhase} Marks to Excel
               </button>
            </div>
            
@@ -322,7 +343,19 @@ const AdminReports = () => {
                  </tr>
                </thead>
                <tbody>
-                 {marksData.map((m, idx) => {
+                 {marksData
+                   .filter(m => {
+                     if (!searchQuery.trim()) return true;
+                     const q = searchQuery.toLowerCase();
+                     return (
+                       m.teamIdFormatted?.toLowerCase().includes(q) ||
+                       m.name?.toLowerCase().includes(q) ||
+                       m.enrollmentNumber?.toLowerCase().includes(q) ||
+                       m.section?.toLowerCase().includes(q) ||
+                       m.projectLevel?.toLowerCase().includes(q)
+                     );
+                   })
+                   .map((m, idx) => {
                    const pd = m.phases[activeMarksPhase];
                    return (
                      <tr key={idx} className="border-b dark:border-gray-700 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">

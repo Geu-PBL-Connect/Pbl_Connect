@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { 
+  Search, X, MapPin, ShieldCheck, ShieldAlert, Shield, 
+  MessageSquare, ExternalLink, Lock, RefreshCw, FileText, 
+  CheckCircle2, XCircle, AlertTriangle, Users, ArrowRight 
+} from 'lucide-react';
 
 const FacultyMentorTeams = () => {
   const [teams, setTeams] = useState([]);
+  const [selectedPbl, setSelectedPbl] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   
   // Grading Modal State
@@ -120,8 +127,6 @@ const FacultyMentorTeams = () => {
     }
   };
 
-  const [selectedPbl, setSelectedPbl] = useState('All');
-
   useEffect(() => {
     fetchTeams();
     fetchVenue();
@@ -154,21 +159,32 @@ const FacultyMentorTeams = () => {
   // Extract unique PBLs for the filter dropdown
   const uniquePbls = [...new Map(teams.map(team => [team.pbl.id, team.pbl])).values()];
 
-  // Filter teams based on selected PBL
-  const filteredTeams = selectedPbl === 'All' 
-    ? teams 
-    : teams.filter(team => team.pbl.id === selectedPbl);
+  // Filter teams based on selected PBL and Search Query
+  const filteredTeams = teams.filter(team => {
+    const matchesPbl = selectedPbl === 'All' || team.pbl.id === selectedPbl;
+    if (!matchesPbl) return false;
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    const matchesId = team.teamIdFormatted?.toLowerCase().includes(q);
+    const matchesTitle = team.projectTitle?.toLowerCase().includes(q);
+    const matchesLeader = team.leader?.user?.name?.toLowerCase().includes(q) || team.leader?.enrollmentNumber?.toLowerCase().includes(q);
+    const matchesMember = team.members?.some(m => 
+      m.student?.user?.name?.toLowerCase().includes(q) ||
+      m.student?.enrollmentNumber?.toLowerCase().includes(q)
+    );
+    return matchesId || matchesTitle || matchesLeader || matchesMember;
+  });
 
   return (
     <div className="space-y-6 fade-in">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Mentored Teams</h2>
           {uniquePbls.length > 0 && (
             <select
               value={selectedPbl}
               onChange={(e) => setSelectedPbl(e.target.value)}
-              className="px-3 py-1.5 border border-gray-200 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary"
+              className="px-3 py-1.5 border border-gray-200 dark:border-gray-600 rounded-lg text-xs bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="All">All PBLs</option>
               {uniquePbls.map(pbl => (
@@ -179,17 +195,39 @@ const FacultyMentorTeams = () => {
             </select>
           )}
         </div>
-        <button 
-          onClick={() => setShowVenueModal(true)} 
-          className="px-4 py-2 bg-blue-100 text-blue-700 font-bold rounded-lg hover:bg-blue-200 border border-blue-200 shadow-sm flex items-center gap-2"
-        >
-          📍 Set Location / Venue
-        </button>
+
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+          <div className="relative w-full sm:w-72">
+            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search team ID, title, student..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-8 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-lg dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          <button 
+            onClick={() => setShowVenueModal(true)} 
+            className="px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 shadow-sm flex items-center justify-center gap-2 text-xs shrink-0"
+          >
+            <MapPin className="w-3.5 h-3.5" /> Set Location / Venue
+          </button>
+        </div>
       </div>
       
       {filteredTeams.length === 0 ? (
         <div className="text-center p-8 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
-          <p className="text-gray-500">No teams found for the selected PBL.</p>
+          <p className="text-gray-500">{searchQuery ? `No teams matching "${searchQuery}"` : 'No teams found for the selected PBL.'}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -201,17 +239,24 @@ const FacultyMentorTeams = () => {
               <div key={team.id} className="bg-white dark:bg-gray-800 shadow-sm rounded-2xl border border-gray-100 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
                 <div className="flex justify-between items-start mb-4 border-b border-gray-100 dark:border-gray-700 pb-4">
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="text-xl font-bold text-primary">{team.teamIdFormatted}</h3>
                       {/* Super Mentor Status Badge */}
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1.5 ${
                         isSuperMentorApproved
                           ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200'
                           : isSuperMentorRejected
                           ? 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-200'
                           : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200'
                       }`}>
-                        🛡️ {isSuperMentorApproved ? 'Super Mentor: Approved' : isSuperMentorRejected ? 'Super Mentor: Rejected' : 'Super Mentor: Pending'}
+                        {isSuperMentorApproved ? (
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                        ) : isSuperMentorRejected ? (
+                          <ShieldAlert className="w-3.5 h-3.5" />
+                        ) : (
+                          <Shield className="w-3.5 h-3.5" />
+                        )}
+                        {isSuperMentorApproved ? 'Super Mentor: Approved' : isSuperMentorRejected ? 'Super Mentor: Rejected' : 'Super Mentor: Pending'}
                       </span>
                     </div>
                     <p className="text-sm text-gray-500 mt-1">{team.pbl.subject} (Sem {team.pbl.semester})</p>
@@ -225,15 +270,15 @@ const FacultyMentorTeams = () => {
                     <div className="flex gap-2 mt-2">
                       <button 
                         onClick={() => openInteractionModal(team)}
-                        className="text-xs font-bold text-orange-600 hover:text-orange-800 bg-orange-50 dark:bg-orange-900/20 px-2 py-1 rounded border border-orange-100 dark:border-orange-800"
+                        className="text-xs font-bold text-orange-600 hover:text-orange-800 bg-orange-50 dark:bg-orange-900/20 px-2.5 py-1 rounded-lg border border-orange-100 dark:border-orange-800 flex items-center gap-1"
                       >
-                        📝 Interaction
+                        <MessageSquare className="w-3 h-3" /> Interaction
                       </button>
                       <button 
                         onClick={() => setSelectedTeamDetails(team)}
-                        className="text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded border border-blue-100 dark:border-blue-800"
+                        className="text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 dark:bg-blue-900/20 px-2.5 py-1 rounded-lg border border-blue-100 dark:border-blue-800 flex items-center gap-1"
                       >
-                        Details →
+                        Details <ArrowRight className="w-3 h-3" />
                       </button>
                     </div>
                   </div>
@@ -245,7 +290,7 @@ const FacultyMentorTeams = () => {
                     <span className="font-bold text-gray-700 dark:text-gray-300 block mb-0.5">Project: {team.projectTitle}</span>
                     {team.githubUrl && (
                       <a href={team.githubUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1 font-semibold">
-                        🔗 {team.githubUrl}
+                        <ExternalLink className="w-3 h-3" /> {team.githubUrl}
                       </a>
                     )}
                   </div>
@@ -259,8 +304,8 @@ const FacultyMentorTeams = () => {
                       : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 text-amber-800 dark:text-amber-300'
                   }`}>
                     <div className="flex items-center gap-1.5 font-bold mb-1">
-                      <span>🔒 Quality Gate Enforced:</span>
-                      <span>{isSuperMentorRejected ? 'Super Mentor Rejected Project' : 'Super Mentor Validation Pending'}</span>
+                      <Lock className="w-3.5 h-3.5" />
+                      <span>Quality Gate Enforced: {isSuperMentorRejected ? 'Super Mentor Rejected Project' : 'Super Mentor Validation Pending'}</span>
                     </div>
                     <p>
                       {isSuperMentorRejected
@@ -292,40 +337,41 @@ const FacultyMentorTeams = () => {
                                 Phase {phaseNum} Submission
                               </span>
                               {isResubmitted ? (
-                                <span className="px-3 py-1 bg-amber-500 text-white rounded-full text-xs font-black uppercase tracking-wider shadow-xs flex items-center gap-1">
-                                  🔄 Resubmitted
+                                <span className="px-2.5 py-0.5 bg-amber-500 text-white rounded-full text-xs font-bold uppercase tracking-wider shadow-xs flex items-center gap-1">
+                                  <RefreshCw className="w-3 h-3 animate-spin" /> Resubmitted
                                 </span>
                               ) : sub.status === 'PENDING' ? (
                                 <span className="px-2.5 py-0.5 bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 rounded-full text-xs font-bold uppercase">
-                                  🆕 Pending Grade
+                                  Pending Grade
                                 </span>
                               ) : lastGrade && lastGrade.grade === 0 ? (
-                                <span className="px-2.5 py-0.5 bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 rounded-full text-xs font-bold uppercase">
-                                  ❌ Rejected (Grade 0)
+                                <span className="px-2.5 py-0.5 bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 rounded-full text-xs font-bold uppercase flex items-center gap-1">
+                                  <XCircle className="w-3 h-3" /> Rejected (Grade 0)
                                 </span>
                               ) : (
-                                <span className="px-2.5 py-0.5 bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 rounded-full text-xs font-bold uppercase">
-                                  ✔ Graded (Approved - Grade 1)
+                                <span className="px-2.5 py-0.5 bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 rounded-full text-xs font-bold uppercase flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3" /> Graded (Approved - Grade 1)
                                 </span>
                               )}
                             </div>
 
-                            <div className="flex items-center gap-4 text-sm">
+                            <div className="flex items-center gap-4 text-xs">
                               <a href={sub.synopsisUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline font-semibold flex items-center gap-1">
-                                📄 Synopsis / Report PDF
+                                <FileText className="w-3.5 h-3.5" /> Synopsis / Report PDF
                               </a>
                               {sub.fileUrls?.additionalLink && (
                                 <a href={sub.fileUrls.additionalLink} target="_blank" rel="noopener noreferrer" className="text-indigo-600 dark:text-indigo-400 hover:underline font-semibold flex items-center gap-1">
-                                  🔗 Project Link
+                                  <ExternalLink className="w-3.5 h-3.5" /> Project Link
                                 </a>
                               )}
                             </div>
 
                             {(isResubmitted || (lastGrade && lastGrade.grade === 0)) && lastGrade && (
                               <div className="mt-2 p-2.5 bg-red-100/80 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 rounded-lg text-xs leading-relaxed">
-                                <span className="font-bold uppercase text-red-600 dark:text-red-400">
-                                  {isResubmitted ? "⚠️ Previous Rejection History:" : "❌ Current Rejection Status:"}
-                                </span><br/>
+                                <span className="font-bold uppercase text-red-600 dark:text-red-400 flex items-center gap-1">
+                                  <AlertTriangle className="w-3.5 h-3.5" />
+                                  {isResubmitted ? "Previous Rejection History:" : "Current Rejection Status:"}
+                                </span>
                                 <strong>Grade:</strong> 0 &bull; <strong>Remarks:</strong> &ldquo;{lastGrade.remarks || 'Needs improvement'}&rdquo;
                               </div>
                             )}
@@ -338,8 +384,8 @@ const FacultyMentorTeams = () => {
                                 ? (mmAssignment.evaluations.reduce((sum, ev) => sum + ev.totalMarks, 0) / evalsCount).toFixed(2)
                                 : 'Pending';
                               return (
-                                <div className="mt-2 text-sm font-semibold text-indigo-700 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-300 p-2 rounded border border-indigo-100 dark:border-indigo-800 inline-block">
-                                  🤝 Peer Review Avg Score: {avgScore} ({evalsCount} reviews)
+                                <div className="mt-2 text-xs font-semibold text-indigo-700 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-300 p-2 rounded border border-indigo-100 dark:border-indigo-800 flex items-center gap-1.5">
+                                  <Users className="w-3.5 h-3.5" /> Peer Review Avg Score: {avgScore} ({evalsCount} reviews)
                                 </div>
                               );
                             })()}
@@ -354,7 +400,7 @@ const FacultyMentorTeams = () => {
                                 setGrade(1);
                                 setRemarks('');
                               }}
-                              className={`px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition whitespace-nowrap ${
+                              className={`px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition whitespace-nowrap ${
                                 isResubmitted 
                                   ? 'bg-amber-600 hover:bg-amber-700 text-white' 
                                   : sub.status === 'PENDING'
@@ -362,7 +408,7 @@ const FacultyMentorTeams = () => {
                                   : 'bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white'
                               }`}
                             >
-                              {isResubmitted ? '⚖️ Evaluate Resubmission' : sub.status === 'PENDING' ? 'Grade Now' : 'Edit Grade'}
+                              {isResubmitted ? 'Evaluate Resubmission' : sub.status === 'PENDING' ? 'Grade Now' : 'Edit Grade'}
                             </button>
                           ) : (
                             <button 
@@ -370,7 +416,7 @@ const FacultyMentorTeams = () => {
                               title="Grading is locked until Super Mentor approves project details"
                               className="px-4 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 rounded-xl text-xs font-bold cursor-not-allowed flex items-center gap-1.5"
                             >
-                              🔒 Grade Locked
+                              <Lock className="w-3.5 h-3.5" /> Grade Locked
                             </button>
                           )}
                         </div>

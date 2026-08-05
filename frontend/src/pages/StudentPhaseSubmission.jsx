@@ -2,6 +2,11 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { openPrivateFile } from "../utils/fileViewer";
+import { 
+  ShieldCheck, ShieldAlert, Shield, Clock, CheckCircle2, 
+  AlertTriangle, FileText, Lock, ExternalLink, RefreshCw, 
+  Edit, Users, GitBranch, Sparkles 
+} from "lucide-react";
 
 const StudentPhaseSubmission = () => {
   const { phaseId } = useParams();
@@ -174,8 +179,14 @@ const StudentPhaseSubmission = () => {
               <div className="bg-white dark:bg-gray-800 shadow-sm rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-gray-100 dark:border-gray-700">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 flex items-center justify-center text-xl font-bold">
-                      🛡️
+                    <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 flex items-center justify-center font-bold">
+                      {isSuperMentorApproved ? (
+                        <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                      ) : isSuperMentorRejected ? (
+                        <ShieldAlert className="w-5 h-5 text-rose-600" />
+                      ) : (
+                        <Shield className="w-5 h-5 text-purple-600" />
+                      )}
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-gray-800 dark:text-white">
@@ -196,9 +207,12 @@ const StudentPhaseSubmission = () => {
                         : "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-700"
                     }`}
                   >
-                    {isSuperMentorApproved && "✓ APPROVED"}
-                    {isSuperMentorRejected && "✕ REJECTED / NEEDS REVISION"}
-                    {!isSuperMentorApproved && !isSuperMentorRejected && "⏳ PENDING REVIEW"}
+                    {isSuperMentorApproved && <CheckCircle2 className="w-3.5 h-3.5" />}
+                    {isSuperMentorRejected && <ShieldAlert className="w-3.5 h-3.5" />}
+                    {!isSuperMentorApproved && !isSuperMentorRejected && <Clock className="w-3.5 h-3.5" />}
+                    {isSuperMentorApproved && "APPROVED"}
+                    {isSuperMentorRejected && "REJECTED / NEEDS REVISION"}
+                    {!isSuperMentorApproved && !isSuperMentorRejected && "PENDING REVIEW"}
                   </span>
                 </div>
 
@@ -234,7 +248,7 @@ const StudentPhaseSubmission = () => {
                             rel="noopener noreferrer"
                             className="text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
                           >
-                            🔗 {team.githubUrl}
+                            <ExternalLink className="w-3.5 h-3.5" /> {team.githubUrl}
                           </a>
                         ) : (
                           <span className="text-gray-400 italic">Not submitted yet</span>
@@ -263,7 +277,7 @@ const StudentPhaseSubmission = () => {
                   {isSuperMentorRejected && (
                     <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800 text-red-900 dark:text-red-200">
                       <div className="flex items-start gap-2">
-                        <span className="text-lg">⚠️</span>
+                        <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                         <div className="flex-1">
                           <h4 className="font-bold text-sm">
                             Super Mentor Feedback (Changes Required):
@@ -274,9 +288,9 @@ const StudentPhaseSubmission = () => {
                           {isLeader && !isResubmitting && (
                             <button
                               onClick={() => setIsResubmitting(true)}
-                              className="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold shadow-sm transition"
+                              className="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold shadow-sm transition flex items-center gap-1.5"
                             >
-                              ✏️ Edit & Resubmit Project Details
+                              <Edit className="w-3.5 h-3.5" /> Edit & Resubmit Project Details
                             </button>
                           )}
                         </div>
@@ -286,7 +300,7 @@ const StudentPhaseSubmission = () => {
 
                   {isSuperMentorApproved && (
                     <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 rounded-xl border border-emerald-200 dark:border-emerald-800 text-xs flex items-center gap-2">
-                      <span>🎉</span>
+                      <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
                       <span>
                         <strong>Quality Gate Passed!</strong> Your project has been approved by the Super Mentor. Your assigned Mentor is now authorized to evaluate and grade your submissions.
                       </span>
@@ -295,7 +309,7 @@ const StudentPhaseSubmission = () => {
 
                   {!isSuperMentorApproved && !isSuperMentorRejected && (
                     <div className="p-3 bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 rounded-xl border border-amber-200 dark:border-amber-800 text-xs flex items-center gap-2">
-                      <span>⏳</span>
+                      <Clock className="w-4 h-4 text-amber-600 shrink-0" />
                       <span>
                         <strong>Quality Gate Pending:</strong> Project details are awaiting Super Mentor verification. Mentor grading is paused until validation is complete.
                       </span>
@@ -349,12 +363,12 @@ const StudentPhaseSubmission = () => {
                           </span>
                           <button
                             onClick={() => openPrivateFile(submission.id)}
-                            className="text-blue-600 hover:underline break-all font-semibold"
+                            className="text-blue-600 hover:underline break-all font-semibold inline-flex items-center gap-1.5"
                           >
-                            📄 View Submitted Synopsis/Report
+                            <FileText className="w-4 h-4" /> View Submitted Synopsis/Report
                           </button>
-                          <div className="text-xs text-gray-400 mt-0.5">
-                            🔒 Stored securely on AWS S3
+                          <div className="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
+                            <Lock className="w-3 h-3" /> Stored securely on AWS S3
                           </div>
                         </div>
 
@@ -367,9 +381,9 @@ const StudentPhaseSubmission = () => {
                               href={team.githubUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-blue-600 hover:underline break-all font-semibold"
+                              className="text-blue-600 hover:underline break-all font-semibold inline-flex items-center gap-1"
                             >
-                              🔗 {team.githubUrl}
+                              <ExternalLink className="w-3.5 h-3.5" /> {team.githubUrl}
                             </a>
                           </div>
                         )}
@@ -383,9 +397,9 @@ const StudentPhaseSubmission = () => {
                               href={submission.fileUrls.additionalLink}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-blue-600 hover:underline break-all font-semibold"
+                              className="text-blue-600 hover:underline break-all font-semibold inline-flex items-center gap-1"
                             >
-                              🔗 {submission.fileUrls.additionalLink}
+                              <ExternalLink className="w-3.5 h-3.5" /> {submission.fileUrls.additionalLink}
                             </a>
                           </div>
                         )}
@@ -418,13 +432,13 @@ const StudentPhaseSubmission = () => {
                           (isLeader ? (
                             <button
                               onClick={() => setIsResubmitting(true)}
-                              className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold shadow-sm transition"
+                              className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-sm font-bold shadow-sm transition flex items-center gap-1.5"
                             >
-                              🔄 Resubmit Synopsis / Phase Report
+                              <RefreshCw className="w-4 h-4" /> Resubmit Synopsis / Phase Report
                             </button>
                           ) : (
                             <div className="p-3 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 rounded-lg text-xs font-bold flex items-center gap-2">
-                              <span>⚠️</span> This phase requires revision. Awaiting resubmission by your Team Leader.
+                              <AlertTriangle className="w-4 h-4" /> This phase requires revision. Awaiting resubmission by your Team Leader.
                             </div>
                           ))}
                       </div>
@@ -432,8 +446,8 @@ const StudentPhaseSubmission = () => {
                   </div>
                 ) : !isLeader ? (
                   <div className="p-10 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 text-center">
-                    <div className="w-14 h-14 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-2xl mx-auto mb-4">
-                      👥
+                    <div className="w-14 h-14 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 flex items-center justify-center mx-auto mb-4">
+                      <Users className="w-7 h-7" />
                     </div>
                     <h4 className="font-bold text-xl text-gray-800 dark:text-white mb-2">
                       Awaiting Team Leader Submission
@@ -442,7 +456,7 @@ const StudentPhaseSubmission = () => {
                       The Synopsis and Phase {phaseId} Report have not been uploaded yet. As a Team Member, you have view-only access.
                     </p>
                     <div className="inline-block px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 text-xs font-bold rounded-lg border border-indigo-100 dark:border-indigo-800">
-                      👉 Once your Team Leader uploads the report, you can view the document, status, and mentor grades here!
+                      Once your Team Leader uploads the report, you can view the document, status, and mentor grades here.
                     </div>
                   </div>
                 ) : (
@@ -499,8 +513,8 @@ const StudentPhaseSubmission = () => {
                         GitHub Repository URL {isPhase1 && <span className="text-red-500">*</span>}
                       </label>
                       <div className="relative">
-                        <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 text-base">
-                          🐙
+                        <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                          <GitBranch className="w-4 h-4" />
                         </span>
                         <input
                           type="url"
