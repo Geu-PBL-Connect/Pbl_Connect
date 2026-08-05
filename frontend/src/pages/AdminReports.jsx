@@ -149,6 +149,54 @@ const AdminReports = () => {
     }
   };
 
+  const handleExportSuperMentorList = async () => {
+    try {
+      setLoading(true);
+      const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+      const res = await axios.get(`/api/admin/reports/super-mentor/${selectedPbl}`, {
+        headers: { Authorization: `Bearer ${userInfo.token}` }
+      });
+
+      const teamsData = res.data.teams || [];
+      if (teamsData.length === 0) {
+        return alert('No Super Mentor data found for this PBL.');
+      }
+
+      const superMentorsMap = {};
+      teamsData.forEach(t => {
+        if (t.superMentor) {
+          if (!superMentorsMap[t.superMentor.id]) {
+            superMentorsMap[t.superMentor.id] = {
+              'Super Mentor Name': t.superMentor.user?.name || 'Unknown',
+              'Assigned Teams': []
+            };
+          }
+          superMentorsMap[t.superMentor.id]['Assigned Teams'].push(t.teamIdFormatted);
+        }
+      });
+
+      const exportData = Object.values(superMentorsMap).map(sm => ({
+        'Super Mentor Name': sm['Super Mentor Name'],
+        'Assigned Teams': sm['Assigned Teams'].join(', '),
+        'Total Teams': sm['Assigned Teams'].length
+      }));
+
+      if (exportData.length === 0) {
+        return alert('No Super Mentors assigned for this PBL.');
+      }
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(exportData), 'Super_Mentors_List');
+      XLSX.writeFile(wb, `${activePblDetails?.subjectShort}_Super_Mentors_List.xlsx`);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to export Super Mentor list');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   const handleExportMarks = (phaseNum) => {
     if (marksData.length === 0) return alert('No marks data found for this PBL.');
     
@@ -253,6 +301,23 @@ const AdminReports = () => {
               <Download className="w-4 h-4" /> Download Excel
             </button>
           </div>
+
+          {/* Super Mentors List Report */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-fuchsia-200 dark:border-fuchsia-800 flex flex-col h-full hover:shadow-md transition-shadow group bg-fuchsia-50/20">
+            <div className="w-12 h-12 rounded-xl bg-fuchsia-100 dark:bg-fuchsia-900/40 text-fuchsia-700 dark:text-fuchsia-300 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+              <Users className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-bold text-fuchsia-950 dark:text-fuchsia-200 mb-2">Super Mentors List</h3>
+            <p className="text-xs text-gray-600 dark:text-gray-400 flex-1 mb-6">Export a list of assigned Super Mentors and their assigned teams.</p>
+            <button 
+              disabled={loading}
+              onClick={handleExportSuperMentorList}
+              className="w-full px-4 py-2.5 bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-bold rounded-xl transition-colors shadow-sm disabled:opacity-50 text-xs flex items-center justify-center gap-2"
+            >
+              <Download className="w-4 h-4" /> Download Excel
+            </button>
+          </div>
+
 
           {/* Evaluator Reports (Dynamic) */}
           {activePhases.map(phase => (
