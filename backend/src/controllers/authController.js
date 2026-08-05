@@ -171,6 +171,7 @@ const createPassword = async (req, res, next) => {
       data: {
         passwordHash: hashedPassword,
         isVerified: true,
+        requiresPasswordChange: false,
         otp: null,
         otpExpiresAt: null
       },
