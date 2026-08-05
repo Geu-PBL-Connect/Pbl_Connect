@@ -16,7 +16,6 @@ const AdminEvaluationSchedule = () => {
   const [showBulkSet, setShowBulkSet] = useState(false);
   const [bulkDate, setBulkDate] = useState('');
   const [bulkTime, setBulkTime] = useState('');
-  const [bulkVenue, setBulkVenue] = useState('');
 
   // Edits tracker
   const [edits, setEdits] = useState({}); // { tpeId: { evaluationDate, evaluationTime, evaluationVenue } }
@@ -75,34 +74,53 @@ const AdminEvaluationSchedule = () => {
     }
   };
 
-  const handleFieldChange = (tpeId, field, value) => {
+  const handleFieldChange = (evalId, field, value) => {
     setEdits(prev => ({
       ...prev,
-      [tpeId]: {
-        ...(prev[tpeId] || {}),
+      [evalId]: {
+        ...(prev[evalId] || {}),
         [field]: value,
       }
     }));
   };
 
-  const getFieldValue = (schedule, field) => {
-    if (edits[schedule.id] && edits[schedule.id][field] !== undefined) {
-      return edits[schedule.id][field];
+  // Group schedules by evaluator
+  const evaluatorsMap = {};
+  schedules.forEach(s => {
+    if (!s.evaluatorId) return; // Skip if no evaluator assigned
+    if (!evaluatorsMap[s.evaluatorId]) {
+      evaluatorsMap[s.evaluatorId] = {
+        evaluatorId: s.evaluatorId,
+        name: s.evaluator?.user?.name || 'Unknown',
+        venue: s.evaluator?.venue || 'Venue Not Set',
+        teamPhaseEvaluatorIds: [],
+        assignedTeams: [],
+        evaluationDate: s.evaluationDate,
+        evaluationTime: s.evaluationTime,
+      };
     }
-    if (field === 'evaluationDate' && schedule.evaluationDate) {
-      return new Date(schedule.evaluationDate).toISOString().split('T')[0];
+    evaluatorsMap[s.evaluatorId].teamPhaseEvaluatorIds.push(s.id);
+    evaluatorsMap[s.evaluatorId].assignedTeams.push(s.team?.teamIdFormatted);
+  });
+  const groupedEvaluators = Object.values(evaluatorsMap).sort((a, b) => a.name.localeCompare(b.name));
+
+  const getFieldValue = (group, field) => {
+    if (edits[group.evaluatorId] && edits[group.evaluatorId][field] !== undefined) {
+      return edits[group.evaluatorId][field];
     }
-    return schedule[field] || '';
+    if (field === 'evaluationDate' && group.evaluationDate) {
+      return new Date(group.evaluationDate).toISOString().split('T')[0];
+    }
+    return group[field] || '';
   };
 
   const handleBulkApply = () => {
     const newEdits = { ...edits };
-    schedules.forEach(s => {
-      newEdits[s.id] = {
-        ...(newEdits[s.id] || {}),
+    groupedEvaluators.forEach(g => {
+      newEdits[g.evaluatorId] = {
+        ...(newEdits[g.evaluatorId] || {}),
         ...(bulkDate ? { evaluationDate: bulkDate } : {}),
         ...(bulkTime ? { evaluationTime: bulkTime } : {}),
-        ...(bulkVenue ? { evaluationVenue: bulkVenue } : {}),
       };
     });
     setEdits(newEdits);
@@ -114,16 +132,20 @@ const AdminEvaluationSchedule = () => {
       setSaving(true);
       const userInfo = JSON.parse(localStorage.getItem('userInfo'));
 
-      // Merge current schedule data with edits
-      const payload = schedules.map(s => {
-        const edit = edits[s.id];
-        return {
-          teamPhaseEvaluatorId: s.id,
-          evaluationDate: edit?.evaluationDate !== undefined ? edit.evaluationDate : (s.evaluationDate ? new Date(s.evaluationDate).toISOString().split('T')[0] : null),
-          evaluationTime: edit?.evaluationTime !== undefined ? edit.evaluationTime : (s.evaluationTime || null),
-          evaluationVenue: edit?.evaluationVenue !== undefined ? edit.evaluationVenue : (s.evaluationVenue || null),
-        };
-      }).filter(s => edits[s.teamPhaseEvaluatorId]); // Only send edited rows
+      const payload = [];
+      Object.keys(edits).forEach(evalId => {
+        const edit = edits[evalId];
+        const group = evaluatorsMap[evalId];
+        if (group) {
+          group.teamPhaseEvaluatorIds.forEach(tpeId => {
+            payload.push({
+              teamPhaseEvaluatorId: tpeId,
+              evaluationDate: edit.evaluationDate !== undefined ? edit.evaluationDate : (group.evaluationDate ? new Date(group.evaluationDate).toISOString().split('T')[0] : null),
+              evaluationTime: edit.evaluationTime !== undefined ? edit.evaluationTime : (group.evaluationTime || null),
+            });
+          });
+        }
+      });
 
       if (payload.length === 0) {
         alert('No changes to save.');
@@ -146,15 +168,13 @@ const AdminEvaluationSchedule = () => {
 
   const currentPhase = phases.find(p => p.id === selectedPhase);
 
-  const filteredSchedules = schedules.filter(s => {
+  const filteredEvaluators = groupedEvaluators.filter(g => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return (
-      s.team?.teamIdFormatted?.toLowerCase().includes(q) ||
-      s.team?.projectTitle?.toLowerCase().includes(q) ||
-      s.team?.leader?.user?.name?.toLowerCase().includes(q) ||
-      s.evaluator?.user?.name?.toLowerCase().includes(q) ||
-      (getFieldValue(s, 'evaluationVenue') || '').toLowerCase().includes(q)
+      g.name.toLowerCase().includes(q) ||
+      g.assignedTeams.some(teamId => teamId?.toLowerCase().includes(q)) ||
+      g.venue.toLowerCase().includes(q)
     );
   });
 
@@ -171,7 +191,7 @@ const AdminEvaluationSchedule = () => {
               Evaluation Schedule Management
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Configure evaluation date, time, and venue for each team per phase.
+              Configure evaluation date, time, and venue for each evaluator per phase.
             </p>
           </div>
         </div>
@@ -214,7 +234,7 @@ const AdminEvaluationSchedule = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search by team, evaluator, venue..."
+              placeholder="Search by evaluator, team, venue..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-10 py-2.5 border rounded-xl dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
@@ -257,7 +277,7 @@ const AdminEvaluationSchedule = () => {
       {showBulkSet && (
         <div className="bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-200 dark:border-indigo-800 p-5 rounded-2xl">
           <h4 className="font-bold text-indigo-800 dark:text-indigo-300 text-sm mb-3 flex items-center gap-2">
-            <Sparkles className="w-4 h-4" /> Apply to All Teams (Phase {currentPhase?.phaseNumber})
+            <Sparkles className="w-4 h-4" /> Apply to All Evaluators (Phase {currentPhase?.phaseNumber})
           </h4>
           <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
@@ -278,20 +298,10 @@ const AdminEvaluationSchedule = () => {
                 className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
               />
             </div>
-            <div className="flex-1">
-              <label className="block text-xs font-bold text-indigo-600 dark:text-indigo-400 mb-1">Venue</label>
-              <input
-                type="text"
-                value={bulkVenue}
-                onChange={e => setBulkVenue(e.target.value)}
-                placeholder="e.g. Room 301, Block A"
-                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-              />
-            </div>
             <div className="flex items-end">
               <button
                 onClick={handleBulkApply}
-                disabled={!bulkDate && !bulkTime && !bulkVenue}
+                disabled={!bulkDate && !bulkTime}
                 className="px-5 py-2 bg-indigo-600 text-white rounded-lg font-bold text-sm hover:bg-indigo-700 transition disabled:opacity-50 whitespace-nowrap"
               >
                 Apply to All
@@ -321,26 +331,22 @@ const AdminEvaluationSchedule = () => {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 dark:bg-gray-900/60 border-b border-gray-100 dark:border-gray-700">
-                  <th className="text-left px-5 py-3.5 font-bold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Team</th>
-                  <th className="text-left px-5 py-3.5 font-bold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Project</th>
                   <th className="text-left px-5 py-3.5 font-bold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Evaluator</th>
+                  <th className="text-left px-5 py-3.5 font-bold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">Assigned Teams</th>
                   <th className="text-left px-5 py-3.5 font-bold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">
                     <span className="flex items-center gap-1"><CalendarDays className="w-3.5 h-3.5" /> Date</span>
                   </th>
                   <th className="text-left px-5 py-3.5 font-bold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">
                     <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> Time</span>
                   </th>
-                  <th className="text-left px-5 py-3.5 font-bold text-gray-600 dark:text-gray-300 text-xs uppercase tracking-wider">
-                    <span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> Venue</span>
-                  </th>
                 </tr>
               </thead>
               <tbody>
-                {filteredSchedules.map((s, idx) => {
-                  const isEdited = !!edits[s.id];
+                {filteredEvaluators.map((g, idx) => {
+                  const isEdited = !!edits[g.evaluatorId];
                   return (
                     <tr
-                      key={s.id}
+                      key={g.evaluatorId}
                       className={`border-b border-gray-50 dark:border-gray-700/50 transition-colors ${
                         isEdited
                           ? 'bg-indigo-50/50 dark:bg-indigo-950/20'
@@ -350,47 +356,37 @@ const AdminEvaluationSchedule = () => {
                       }`}
                     >
                       <td className="px-5 py-3">
-                        <span className="font-bold text-gray-800 dark:text-white text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-md">
-                          {s.team?.teamIdFormatted}
-                        </span>
-                      </td>
-                      <td className="px-5 py-3">
-                        <div className="max-w-[200px]">
-                          <p className="font-semibold text-gray-800 dark:text-white text-xs truncate">
-                            {s.team?.projectTitle || 'Untitled'}
-                          </p>
-                          <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                            Lead: {s.team?.leader?.user?.name || 'N/A'}
-                          </p>
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold text-indigo-700 dark:text-indigo-300">
+                            {g.name}
+                          </span>
+                          <span className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                            <MapPin className="w-3 h-3" /> {g.venue}
+                          </span>
                         </div>
                       </td>
                       <td className="px-5 py-3">
-                        <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded-md">
-                          {s.evaluator?.user?.name || 'Unassigned'}
-                        </span>
+                        <div className="flex flex-wrap gap-1">
+                          {g.assignedTeams.map((tid, i) => (
+                            <span key={i} className="font-semibold text-gray-700 dark:text-gray-300 text-[10px] bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-600">
+                              {tid}
+                            </span>
+                          ))}
+                        </div>
                       </td>
                       <td className="px-5 py-3">
                         <input
                           type="date"
-                          value={getFieldValue(s, 'evaluationDate')}
-                          onChange={e => handleFieldChange(s.id, 'evaluationDate', e.target.value)}
+                          value={getFieldValue(g, 'evaluationDate')}
+                          onChange={e => handleFieldChange(g.evaluatorId, 'evaluationDate', e.target.value)}
                           className="w-full px-2.5 py-1.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-medium"
                         />
                       </td>
                       <td className="px-5 py-3">
                         <input
                           type="time"
-                          value={getFieldValue(s, 'evaluationTime')}
-                          onChange={e => handleFieldChange(s.id, 'evaluationTime', e.target.value)}
-                          className="w-full px-2.5 py-1.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-medium"
-                        />
-                      </td>
-                      <td className="px-5 py-3">
-                        <input
-                          type="text"
-                          value={getFieldValue(s, 'evaluationVenue')}
-                          onChange={e => handleFieldChange(s.id, 'evaluationVenue', e.target.value)}
-                          placeholder="Room / Lab"
+                          value={getFieldValue(g, 'evaluationTime')}
+                          onChange={e => handleFieldChange(g.evaluatorId, 'evaluationTime', e.target.value)}
                           className="w-full px-2.5 py-1.5 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 text-xs font-medium"
                         />
                       </td>
@@ -404,7 +400,7 @@ const AdminEvaluationSchedule = () => {
           {/* Footer */}
           <div className="px-5 py-3.5 bg-gray-50 dark:bg-gray-900/40 border-t border-gray-100 dark:border-gray-700 flex items-center justify-between">
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Showing {filteredSchedules.length} of {schedules.length} teams for Phase {currentPhase?.phaseNumber}
+              Showing {filteredEvaluators.length} of {groupedEvaluators.length} evaluators for Phase {currentPhase?.phaseNumber}
             </p>
             {hasEdits && (
               <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
