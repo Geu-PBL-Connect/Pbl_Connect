@@ -11,6 +11,7 @@ import AdminPhaseConfig from './pages/AdminPhaseConfig';
 import AdminResult from './pages/AdminResult';
 import AdminReevaluation from './pages/AdminReevaluation';
 import AdminMicroMentor from './pages/AdminMicroMentor';
+import AdminSuperMentor from './pages/AdminSuperMentor';
 import AdminLayout from './components/AdminLayout';
 import StudentLayout from './components/StudentLayout';
 import StudentDashboard from './pages/StudentDashboard';
@@ -20,6 +21,7 @@ import FacultyLayout from './components/FacultyLayout';
 import FacultyDashboard from './pages/FacultyDashboard';
 import FacultyMentorTeams from './pages/FacultyMentorTeams';
 import FacultyEvaluatorTeams from './pages/FacultyEvaluatorTeams';
+import FacultySuperMentorTeams from './pages/FacultySuperMentorTeams';
 
 import SuperAdminLayout from './components/SuperAdminLayout';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
@@ -50,6 +52,7 @@ function App() {
           <Route path="teams" element={<AdminTeamManagement />} />
           <Route path="users" element={<AdminUserManagement />} />
           <Route path="faculty" element={<AdminFacultyAllocation />} />
+          <Route path="super-mentor" element={<AdminSuperMentor />} />
           <Route path="phase-config" element={<AdminPhaseConfig />} />
           <Route path="reports" element={<AdminReports />} />
           <Route path="results" element={<AdminResult />} />
@@ -71,6 +74,7 @@ function App() {
           <Route path="dashboard" element={<FacultyDashboard />} />
           <Route path="mentor" element={<FacultyMentorTeams />} />
           <Route path="evaluator" element={<FacultyEvaluatorTeams />} />
+          <Route path="super-mentor" element={<FacultySuperMentorTeams />} />
         </Route>
         
         {/* Fallback Route */}

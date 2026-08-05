@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -36,6 +35,7 @@ model Faculty {
   pblFaculties            PblFaculty[]
   reevaluationAssignments ReevaluationAssignment[]
   mentoredTeams           Team[]                   @relation("TeamMentor")
+  superMentoredTeams      Team[]                   @relation("TeamSuperMentor")
   phaseEvaluations        TeamPhaseEvaluator[]
 }
 
@@ -85,6 +85,13 @@ model Team {
   mentorIdFormatted      String?
   projectLevel           String?
   customRegistrationData Json?
+  projectTitle           String?
+  projectDescription     String?
+  githubUrl              String?
+  superMentorId          String?
+  superMentorStatus      String                  @default("PENDING")
+  superMentorFeedback    String?
+  superMentorReviewedAt  DateTime?
   createdAt              DateTime                @default(now())
   interactions           Interaction[]
   examineeAssignments    MicroMentorAssignment[] @relation("ExamineeAssignments")
@@ -92,6 +99,7 @@ model Team {
   submissions            Submission[]
   leader                 Student                 @relation("TeamLeader", fields: [leaderId], references: [id])
   mentor                 Faculty?                @relation("TeamMentor", fields: [mentorId], references: [id])
+  superMentor            Faculty?                @relation("TeamSuperMentor", fields: [superMentorId], references: [id])
   pbl                    Pbl                     @relation(fields: [pblId], references: [id], onDelete: Cascade)
   members                TeamMember[]
   phaseEvaluators        TeamPhaseEvaluator[]

@@ -1139,9 +1139,12 @@ const getTeamsForPbl = async (req, res, next) => {
       include: {
         leader: { include: { user: true } },
         mentor: { include: { user: true, pblFaculties: { where: { pblId } } } },
+        superMentor: { include: { user: true, pblFaculties: { where: { pblId } } } },
         phaseEvaluators: { include: { evaluator: { include: { user: true, pblFaculties: { where: { pblId } } } }, phase: true } },
-        members: { include: { student: { include: { user: true } } } }
-      }
+        members: { include: { student: { include: { user: true } } } },
+        submissions: { include: { mentorGrades: { orderBy: { gradedAt: 'desc' } } }, orderBy: { submittedAt: 'desc' } }
+      },
+      orderBy: { teamIdFormatted: 'asc' }
     });
     res.json(teams);
   } catch (error) {
@@ -2056,6 +2059,168 @@ const getMicroMentorAssignments = async (req, res, next) => {
   }
 };
 
+// @desc    Assign Super Mentors to teams (auto-distribute or specific mapping)
+// @route   POST /api/admin/super-mentor/assign
+// @access  Private/Admin
+const assignSuperMentors = async (req, res, next) => {
+  try {
+    const { pblId, facultyIds, assignments, autoDistribute } = req.body;
+
+    if (autoDistribute) {
+      if (!pblId || !facultyIds || !Array.isArray(facultyIds) || facultyIds.length === 0) {
+        res.status(400);
+        throw new Error("PBL ID and at least one Super Mentor faculty must be selected for auto-distribution.");
+      }
+
+      const teams = await prisma.team.findMany({
+        where: { pblId },
+        orderBy: { teamIdFormatted: "asc" },
+      });
+
+      if (teams.length === 0) {
+        res.status(400);
+        throw new Error("No teams found for this PBL.");
+      }
+
+      const updatePromises = teams.map((team, index) => {
+        const assignedFacultyId = facultyIds[index % facultyIds.length];
+        return prisma.team.update({
+          where: { id: team.id },
+          data: { superMentorId: assignedFacultyId },
+        });
+      });
+
+      await Promise.all(updatePromises);
+
+      return res.json({
+        message: `Successfully distributed ${teams.length} teams equally among ${facultyIds.length} Super Mentor(s).`,
+      });
+    }
+
+    if (assignments && Array.isArray(assignments)) {
+      const updatePromises = assignments.map(({ teamId, facultyId }) =>
+        prisma.team.update({
+          where: { id: teamId },
+          data: { superMentorId: facultyId || null },
+        })
+      );
+      await Promise.all(updatePromises);
+      return res.json({ message: "Super Mentor assignments updated successfully." });
+    }
+
+    res.status(400);
+    throw new Error("Invalid request payload.");
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get all teams for Super Mentor management in Admin
+// @route   GET /api/admin/super-mentor/teams/:pblId
+// @access  Private/Admin
+const getSuperMentorTeamsAdmin = async (req, res, next) => {
+  try {
+    const { pblId } = req.params;
+    const teams = await prisma.team.findMany({
+      where: { pblId },
+      include: {
+        leader: { include: { user: true } },
+        mentor: { include: { user: true } },
+        superMentor: { include: { user: true } },
+        members: { include: { student: { include: { user: true } } } },
+        submissions: {
+          include: { mentorGrades: { orderBy: { gradedAt: "desc" } } },
+          orderBy: { submittedAt: "desc" },
+        },
+      },
+      orderBy: { teamIdFormatted: "asc" },
+    });
+    res.json(teams);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Admin override Super Mentor review
+// @route   POST /api/admin/super-mentor/override/:teamId
+// @access  Private/Admin
+const overrideSuperMentorReview = async (req, res, next) => {
+  try {
+    const { teamId } = req.params;
+    const { status, feedback } = req.body;
+
+    if (!["APPROVED", "REJECTED", "PENDING"].includes(status)) {
+      res.status(400);
+      throw new Error("Invalid status. Must be 'APPROVED', 'REJECTED', or 'PENDING'.");
+    }
+
+    const updatedTeam = await prisma.team.update({
+      where: { id: teamId },
+      data: {
+        superMentorStatus: status,
+        superMentorFeedback: feedback ? feedback.trim() : null,
+        superMentorReviewedAt: status === "PENDING" ? null : new Date(),
+      },
+      include: {
+        pbl: true,
+        leader: { include: { user: true } },
+        mentor: { include: { user: true } },
+        superMentor: { include: { user: true } },
+        members: { include: { student: { include: { user: true } } } },
+        submissions: true,
+      },
+    });
+
+    res.json({
+      message: `Team status overridden to ${status} by Admin.`,
+      team: updatedTeam,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Get Super Mentor Quality Gate Report
+// @route   GET /api/admin/reports/super-mentor/:pblId
+// @access  Private/Admin
+const getSuperMentorReport = async (req, res, next) => {
+  try {
+    const { pblId } = req.params;
+    const teams = await prisma.team.findMany({
+      where: { pblId },
+      include: {
+        leader: { include: { user: true } },
+        mentor: { include: { user: true } },
+        superMentor: { include: { user: true } },
+        members: { include: { student: { include: { user: true } } } },
+        submissions: {
+          include: { mentorGrades: true },
+          orderBy: { submittedAt: "desc" },
+        },
+      },
+      orderBy: { teamIdFormatted: "asc" },
+    });
+
+    const totalTeams = teams.length;
+    const approvedCount = teams.filter((t) => t.superMentorStatus === "APPROVED").length;
+    const rejectedCount = teams.filter((t) => t.superMentorStatus === "REJECTED").length;
+    const pendingCount = totalTeams - approvedCount - rejectedCount;
+
+    res.json({
+      metrics: {
+        totalTeams,
+        approvedCount,
+        rejectedCount,
+        pendingCount,
+        approvalRate: totalTeams > 0 ? Math.round((approvedCount / totalTeams) * 100) : 0,
+      },
+      teams,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createTeamAdmin,
   createPbl,
@@ -2092,10 +2257,12 @@ module.exports = {
   unlockForReevaluation,
   bulkReevaluation,
   getReevaluations,
-  adminUpdateMarks,
-  getAllStudents,
   bulkDeleteTeams,
   bulkUploadTeams,
   assignMicroMentors,
-  getMicroMentorAssignments
+  getMicroMentorAssignments,
+  assignSuperMentors,
+  getSuperMentorTeamsAdmin,
+  overrideSuperMentorReview,
+  getSuperMentorReport,
 };

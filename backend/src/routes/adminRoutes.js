@@ -39,7 +39,11 @@ const {
   bulkDeleteTeams,
   bulkUploadTeams,
   assignMicroMentors,
-  getMicroMentorAssignments
+  getMicroMentorAssignments,
+  assignSuperMentors,
+  getSuperMentorTeamsAdmin,
+  overrideSuperMentorReview,
+  getSuperMentorReport,
 } = require('../controllers/adminController');
 const { getInteractions } = require('../controllers/facultyController');
 const { protect, authorize } = require('../middlewares/auth');
@@ -63,6 +67,13 @@ router.post('/mentor-mapping', assignMentors);
 router.post('/evaluator-mapping', assignEvaluators);
 router.post('/random-map/mentors', randomMapMentors);
 router.post('/random-map/evaluators', randomMapEvaluators);
+
+// Super Mentor Routes
+router.post('/super-mentor/assign', assignSuperMentors);
+router.get('/super-mentor/teams/:pblId', getSuperMentorTeamsAdmin);
+router.post('/super-mentor/override/:teamId', overrideSuperMentorReview);
+router.get('/reports/super-mentor/:pblId', getSuperMentorReport);
+
 router.post('/re-evaluation/unlock', unlockForReevaluation);
 router.post('/re-evaluation/bulk', uploadExcel.single('file'), bulkReevaluation);
 router.get('/re-evaluation/list/:phaseId', getReevaluations);

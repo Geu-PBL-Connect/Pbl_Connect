@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation, Navigate } from 'react-router-dom';
-import { Users, FileSignature, LogOut } from 'lucide-react';
+import { Users, FileSignature, ShieldCheck, LogOut } from 'lucide-react';
 import geuLogo from '../assets/Graphic-Era-University-GEU-Dehradun-Logo.jpg';
 
 const FacultyLayout = () => {
@@ -7,6 +7,7 @@ const FacultyLayout = () => {
   const navItems = [
     { name: 'Mentored Teams', path: '/faculty/mentor', icon: <Users size={20} /> },
     { name: 'Evaluated Teams', path: '/faculty/evaluator', icon: <FileSignature size={20} /> },
+    { name: 'Super Mentor Gate', path: '/faculty/super-mentor', icon: <ShieldCheck size={20} /> },
   ];
 
   const userInfoString = localStorage.getItem('userInfo');
@@ -56,8 +57,6 @@ const FacultyLayout = () => {
       </header>
 
       <div className="flex w-full h-full pt-16">
-
-
         <main className={`flex-1 overflow-auto bg-white text-gray-800 ${location.pathname !== '/faculty/dashboard' ? 'p-8' : ''}`}>
           {location.pathname !== '/faculty/dashboard' && (
             <div className="mb-6 pb-2 border-b border-gray-100 flex justify-between items-center">

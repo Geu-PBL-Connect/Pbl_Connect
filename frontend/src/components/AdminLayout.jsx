@@ -5,6 +5,7 @@ import {
   Users, 
   UserCog, 
   GraduationCap, 
+  ShieldCheck,
   Settings, 
   BarChart3, 
   FileText, 
@@ -22,6 +23,7 @@ const AdminLayout = () => {
     { name: 'Team Management', path: '/admin/teams', icon: <Users size={20} /> },
     { name: 'Users (Moodle Sync)', path: '/admin/users', icon: <UserCog size={20} /> },
     { name: 'Faculty & Allocation', path: '/admin/faculty', icon: <GraduationCap size={20} /> },
+    { name: 'Super Mentor Gate', path: '/admin/super-mentor', icon: <ShieldCheck size={20} /> },
     { name: 'Phase Config', path: '/admin/phase-config', icon: <Settings size={20} /> },
     { name: 'Reports', path: '/admin/reports', icon: <BarChart3 size={20} /> },
     { name: 'Results', path: '/admin/results', icon: <FileText size={20} /> },
@@ -70,15 +72,15 @@ const AdminLayout = () => {
       <div className="flex w-full h-full pt-16">
         {/* Sidebar */}
         <aside className="w-64 flex flex-col bg-[#1c1f58] text-white shadow-xl z-10">
-          <nav className="flex-1 py-6 space-y-2 px-4 overflow-y-auto">
-            <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 px-2">Main Menu</div>
+          <nav className="flex-1 py-6 space-y-1.5 px-4 overflow-y-auto">
+            <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">Main Menu</div>
             {navItems.map((item) => {
               const isActive = location.pathname.startsWith(item.path);
               return (
                 <Link
                   key={item.name}
                   to={item.path}
-                  className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 ${
+                  className={`flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
                     isActive
                       ? 'bg-[#131540] text-[#fbc02d] shadow-inner'
                       : 'text-gray-300 hover:bg-[#292d7c] hover:text-white'
@@ -97,7 +99,7 @@ const AdminLayout = () => {
                 localStorage.removeItem('userInfo');
                 window.location.href = '/login';
               }}
-              className="flex items-center w-full px-4 py-2.5 text-sm font-medium text-red-400 rounded-lg hover:bg-red-500/10 hover:text-red-300 transition-colors"
+              className="flex items-center w-full px-4 py-2 text-sm font-medium text-red-400 rounded-lg hover:bg-red-500/10 hover:text-red-300 transition-colors"
             >
               <span className="mr-3 text-lg"><LogOut size={20} /></span> Logout
             </button>

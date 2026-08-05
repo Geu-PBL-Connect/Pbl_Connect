@@ -11,8 +11,6 @@ const AdminReports = () => {
   const [marksData, setMarksData] = useState([]);
   const [activeMarksPhase, setActiveMarksPhase] = useState(1);
 
-
-
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
@@ -103,16 +101,54 @@ const AdminReports = () => {
         teamData.push({
           'Team ID': t.teamIdFormatted,
           'Leader Name': t.leader?.user?.name || 'N/A',
-          'Student Name': m.student.user.name,
-          'Roll Number': m.student.enrollmentNumber,
-          'Section': m.student.section,
-          'Role': t.leaderId === m.student.id ? 'Leader' : 'Member'
+          'Student Name': m.student?.user?.name || 'N/A',
+          'Roll Number': m.student?.enrollmentNumber || 'N/A',
+          'Section': m.student?.section || 'N/A',
+          'Role': t.leaderId === m.student?.id ? 'Leader' : 'Member'
         });
       });
     });
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(teamData), 'Teams_And_Members');
     XLSX.writeFile(wb, `${activePblDetails?.subjectShort}_Teams.xlsx`);
+  };
+
+  const handleExportSuperMentors = async () => {
+    try {
+      setLoading(true);
+      const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+      const res = await axios.get(`/api/admin/reports/super-mentor/${selectedPbl}`, {
+        headers: { Authorization: `Bearer ${userInfo.token}` }
+      });
+
+      if (!res.data || res.data.length === 0) {
+        return alert('No Super Mentor data found for this PBL.');
+      }
+
+      const exportData = res.data.map(t => ({
+        'Team ID': t.teamIdFormatted,
+        'Project Title': t.projectTitle || 'N/A',
+        'Project Description': t.projectDescription || 'N/A',
+        'GitHub URL': t.githubUrl || 'N/A',
+        'Leader Name': t.leader?.user?.name || 'N/A',
+        'Leader Email': t.leader?.user?.email || 'N/A',
+        'Regular Mentor': t.mentor?.user?.name || 'Unassigned',
+        'Super Mentor Name': t.superMentor?.user?.name || 'Unassigned',
+        'Super Mentor Email': t.superMentor?.user?.email || 'N/A',
+        'Super Mentor Department': t.superMentor?.department || 'N/A',
+        'Super Mentor Status': t.superMentorStatus || 'PENDING',
+        'Super Mentor Feedback': t.superMentorFeedback || 'N/A'
+      }));
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(exportData), 'Super_Mentor_Validation');
+      XLSX.writeFile(wb, `${activePblDetails?.subjectShort}_Super_Mentor_Report.xlsx`);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to export Super Mentor report');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleExportMarks = (phaseNum) => {
@@ -147,14 +183,12 @@ const AdminReports = () => {
     XLSX.writeFile(wb, `${activePblDetails?.subjectShort}_Phase_${phaseNum}_Marks.xlsx`);
   };
 
-
-
   return (
-    <div className="space-y-6 fade-in max-w-5xl mx-auto">
+    <div className="space-y-6 fade-in max-w-5xl mx-auto pb-12">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Reports & Export</h2>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Export specific lists to Excel for offline tracking.</p>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Export specific lists and audit data to Excel for offline analysis.</p>
         </div>
       </div>
 
@@ -173,18 +207,18 @@ const AdminReports = () => {
       </div>
 
       {selectedPbl && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Teams & Members Report */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col h-full hover:shadow-md transition-shadow group">
             <div className="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
               👥
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Teams & Members</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 flex-1 mb-6">Export a detailed list of all teams and their individual members.</p>
+            <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2">Teams & Members</h3>
+            <p className="text-xs text-gray-600 dark:text-gray-400 flex-1 mb-6">Export a detailed list of all teams and their individual members.</p>
             <button 
               disabled={loading}
               onClick={handleExportTeams}
-              className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-colors shadow-sm disabled:opacity-50"
+              className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-colors shadow-sm disabled:opacity-50 text-xs"
             >
               ⬇️ Download Excel
             </button>
@@ -195,12 +229,28 @@ const AdminReports = () => {
             <div className="w-14 h-14 rounded-2xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
               👨‍🏫
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Mentor Allocations</h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 flex-1 mb-6">Export the assignment mapping of teams to mentors.</p>
+            <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2">Mentor Allocations</h3>
+            <p className="text-xs text-gray-600 dark:text-gray-400 flex-1 mb-6">Export the assignment mapping of teams to mentors.</p>
             <button 
               disabled={loading}
               onClick={handleExportMentors}
-              className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-colors shadow-sm disabled:opacity-50"
+              className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-colors shadow-sm disabled:opacity-50 text-xs"
+            >
+              ⬇️ Download Excel
+            </button>
+          </div>
+
+          {/* Super Mentor Quality Gate Report */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-purple-200 dark:border-purple-800 flex flex-col h-full hover:shadow-md transition-shadow group bg-purple-50/20">
+            <div className="w-14 h-14 rounded-2xl bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
+              🛡️
+            </div>
+            <h3 className="text-base font-bold text-purple-950 dark:text-purple-200 mb-2">Super Mentor Validation</h3>
+            <p className="text-xs text-gray-600 dark:text-gray-400 flex-1 mb-6">Export validation status, project titles, GitHub URLs, and remarks for all teams.</p>
+            <button 
+              disabled={loading}
+              onClick={handleExportSuperMentors}
+              className="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl transition-colors shadow-sm disabled:opacity-50 text-xs"
             >
               ⬇️ Download Excel
             </button>
@@ -212,12 +262,12 @@ const AdminReports = () => {
               <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-2xl mb-4 group-hover:scale-110 transition-transform">
                 📝
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Phase {phase.phaseNumber} Evaluators</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400 flex-1 mb-6">Export evaluator mappings for Phase {phase.phaseNumber}.</p>
+              <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2">Phase {phase.phaseNumber} Evaluators</h3>
+              <p className="text-xs text-gray-600 dark:text-gray-400 flex-1 mb-6">Export evaluator mappings for Phase {phase.phaseNumber}.</p>
               <button 
                 disabled={loading}
                 onClick={() => handleExportEvaluators(phase)}
-                className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-colors shadow-sm disabled:opacity-50"
+                className="w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-colors shadow-sm disabled:opacity-50 text-xs"
               >
                 ⬇️ Download Excel
               </button>
@@ -252,7 +302,7 @@ const AdminReports = () => {
            <div className="flex justify-end mb-4">
               <button 
                 onClick={() => handleExportMarks(activeMarksPhase)}
-                className="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-sm flex items-center gap-2 transition-all w-full sm:w-auto justify-center"
+                className="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-sm flex items-center gap-2 transition-all w-full sm:w-auto justify-center text-xs"
               >
                 <span>📊</span> Export Phase {activeMarksPhase} Marks to Excel
               </button>
@@ -296,7 +346,7 @@ const AdminReports = () => {
                        </td>
                        <td className="px-5 py-4 font-black text-gray-800 dark:text-gray-200">
                          {pd?.evaluatorTotalMarks !== null ? (
-                            pd.evaluatorTotalMarks === 0 && Object.values(pd.evaluatorMarksData).includes('AB') ? (
+                            pd.evaluatorTotalMarks === 0 && Object.values(pd.evaluatorMarksData || {}).includes('AB') ? (
                               <div className="flex items-center space-x-3">
                                 <span className="text-red-500 font-bold">AB (Absent)</span>
                               </div>
@@ -311,8 +361,6 @@ const AdminReports = () => {
            </div>
         </div>
       )}
-
-
     </div>
   );
 };

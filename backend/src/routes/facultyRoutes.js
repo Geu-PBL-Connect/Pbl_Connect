@@ -13,7 +13,10 @@ const {
   logInteraction,
   getInteractions,
   updateVenue,
-  getVenue
+  getVenue,
+  getSuperMentoredTeams,
+  reviewSuperMentorTeam,
+  checkSuperMentorRole,
 } = require('../controllers/facultyController');
 const { protect, authorize } = require('../middlewares/auth');
 
@@ -22,6 +25,11 @@ router.use(authorize('FACULTY'));
 
 router.put('/venue', updateVenue);
 router.get('/venue', getVenue);
+
+// Super Mentor Routes
+router.get('/super-mentor/check-role', checkSuperMentorRole);
+router.get('/super-mentor/teams', getSuperMentoredTeams);
+router.post('/super-mentor/review/:teamId', reviewSuperMentorTeam);
 
 router.get('/mentor/teams', getMentoredTeams);
 router.post('/mentor/grade/:submissionId', mentorGradeSubmission);

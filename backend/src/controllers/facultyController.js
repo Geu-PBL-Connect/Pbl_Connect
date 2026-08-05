@@ -19,6 +19,7 @@ const getMentoredTeams = async (req, res, next) => {
           include: { phases: true, pblFaculties: { where: { facultyId } } },
         },
         leader: { include: { user: true } },
+        superMentor: { include: { user: true } },
         members: { include: { student: { include: { user: true } } } },
         submissions: { include: { mentorGrades: true } },
         examineeAssignments: { include: { evaluations: true } },
@@ -94,6 +95,16 @@ const mentorGradeSubmission = async (req, res, next) => {
     if (!submission || submission.team.mentorId !== facultyId) {
       res.status(403);
       throw new Error("Not authorized to grade this submission.");
+    }
+
+    // Strict Super Mentor Quality Gate Check
+    if (submission.team.superMentorStatus !== "APPROVED") {
+      res.status(403);
+      throw new Error(
+        submission.team.superMentorStatus === "REJECTED"
+          ? `Project grading is disabled. Super Mentor rejected this project: "${submission.team.superMentorFeedback || 'Scope needs revision'}". Awaiting student resubmission.`
+          : "Project grading is disabled until Super Mentor approval is received."
+      );
     }
 
     const mentorGrade = await prisma.mentorGrade.upsert({
@@ -514,6 +525,127 @@ const getVenue = async (req, res, next) => {
   }
 };
 
+// @desc    Get teams assigned to this faculty as Super Mentor
+// @route   GET /api/faculty/super-mentor/teams
+// @access  Private/Faculty
+const getSuperMentoredTeams = async (req, res, next) => {
+  try {
+    const facultyId = req.user.facultyProfileId;
+    if (!facultyId) {
+      res.status(403);
+      throw new Error("Not registered as a faculty member.");
+    }
+
+    const teams = await prisma.team.findMany({
+      where: { superMentorId: facultyId },
+      include: {
+        pbl: {
+          include: {
+            phases: true,
+            pblFaculties: { include: { faculty: { include: { user: true } } } },
+          },
+        },
+        leader: { include: { user: true } },
+        mentor: { include: { user: true, pblFaculties: true } },
+        members: {
+          include: {
+            student: { include: { user: true } },
+          },
+        },
+        submissions: {
+          include: {
+            mentorGrades: { orderBy: { gradedAt: "desc" } },
+          },
+          orderBy: { submittedAt: "desc" },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.json(teams);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Approve or Reject a team project as Super Mentor
+// @route   POST /api/faculty/super-mentor/review/:teamId
+// @access  Private/Faculty
+const reviewSuperMentorTeam = async (req, res, next) => {
+  try {
+    const { teamId } = req.params;
+    const { action, feedback } = req.body; // action: 'APPROVE' or 'REJECT'
+    const facultyId = req.user.facultyProfileId;
+
+    if (!["APPROVE", "REJECT"].includes(action)) {
+      res.status(400);
+      throw new Error("Invalid action. Must be 'APPROVE' or 'REJECT'.");
+    }
+
+    if (action === "REJECT" && (!feedback || !feedback.trim())) {
+      res.status(400);
+      throw new Error("Feedback/remarks are mandatory when rejecting a project.");
+    }
+
+    const team = await prisma.team.findUnique({
+      where: { id: teamId },
+    });
+
+    if (!team) {
+      res.status(404);
+      throw new Error("Team not found.");
+    }
+
+    if (team.superMentorId !== facultyId) {
+      res.status(403);
+      throw new Error("You are not assigned as the Super Mentor for this team.");
+    }
+
+    const updatedTeam = await prisma.team.update({
+      where: { id: teamId },
+      data: {
+        superMentorStatus: action === "APPROVE" ? "APPROVED" : "REJECTED",
+        superMentorFeedback: action === "REJECT" ? feedback.trim() : (feedback ? feedback.trim() : null),
+        superMentorReviewedAt: new Date(),
+      },
+      include: {
+        pbl: true,
+        leader: { include: { user: true } },
+        mentor: { include: { user: true } },
+        members: { include: { student: { include: { user: true } } } },
+        submissions: true,
+      },
+    });
+
+    res.json({
+      message: `Project ${action === "APPROVE" ? "approved" : "rejected"} successfully`,
+      team: updatedTeam,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Check if current faculty has any assigned Super Mentor teams
+// @route   GET /api/faculty/super-mentor/check-role
+// @access  Private/Faculty
+const checkSuperMentorRole = async (req, res, next) => {
+  try {
+    const facultyId = req.user.facultyProfileId;
+    if (!facultyId) {
+      return res.json({ isSuperMentor: false, assignedCount: 0 });
+    }
+
+    const count = await prisma.team.count({
+      where: { superMentorId: facultyId },
+    });
+
+    res.json({ isSuperMentor: count > 0, assignedCount: count });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getMentoredTeams,
   getEvaluatedTeams,
@@ -528,4 +660,7 @@ module.exports = {
   getInteractions,
   updateVenue,
   getVenue,
+  getSuperMentoredTeams,
+  reviewSuperMentorTeam,
+  checkSuperMentorRole,
 };

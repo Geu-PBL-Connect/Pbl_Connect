@@ -277,6 +277,7 @@ const getMyTeam = async (req, res, next) => {
           include: {
             pbl: { include: { phases: true } },
             mentor: { include: { user: true } },
+            superMentor: { include: { user: true } },
             phaseEvaluators: {
               include: { evaluator: { include: { user: true } }, phase: true },
             },
@@ -335,7 +336,7 @@ const getSubmissionForPhase = async (req, res, next) => {
 // @access  Private/Student
 const submitPhase = async (req, res, next) => {
   try {
-    const { teamId, phaseNumber, fileUrls } = req.body; // synopsisUrl removed from body if using file upload
+    const { teamId, phaseNumber, fileUrls, projectTitle, projectDescription, githubUrl } = req.body;
     const studentId = req.user.studentProfileId;
     let providedSynopsisUrl = req.body.synopsisUrl;
 
@@ -400,6 +401,58 @@ const submitPhase = async (req, res, next) => {
       throw new Error(
         `Submission deadline for Phase ${phaseNumber} has passed.`,
       );
+    }
+
+    const isPhase1 = parseInt(phaseNumber) === 1;
+    const teamUpdateData = {};
+
+    if (projectTitle !== undefined) {
+      teamUpdateData.projectTitle = projectTitle.trim();
+    }
+    if (projectDescription !== undefined) {
+      const words = projectDescription.trim().split(/\s+/).filter(Boolean);
+      if (words.length > 250) {
+        res.status(400);
+        throw new Error(
+          `Project description exceeds maximum limit of 250 words (current: ${words.length} words).`,
+        );
+      }
+      teamUpdateData.projectDescription = projectDescription.trim();
+    }
+    if (githubUrl !== undefined) {
+      teamUpdateData.githubUrl = githubUrl.trim();
+    }
+
+    if (isPhase1) {
+      if (!projectTitle || !projectTitle.trim()) {
+        res.status(400);
+        throw new Error("Project Title is required for Phase 1 submission.");
+      }
+      if (!projectDescription || !projectDescription.trim()) {
+        res.status(400);
+        throw new Error(
+          "Project Description (max 250 words) is required for Phase 1 submission.",
+        );
+      }
+      if (!githubUrl || !githubUrl.trim()) {
+        res.status(400);
+        throw new Error(
+          "GitHub Repository Link is mandatory for Phase 1 submission.",
+        );
+      }
+
+      // If team was previously rejected by Super Mentor, reset to PENDING on resubmission
+      if (team.superMentorStatus === "REJECTED") {
+        teamUpdateData.superMentorStatus = "PENDING";
+        teamUpdateData.superMentorFeedback = null;
+      }
+    }
+
+    if (Object.keys(teamUpdateData).length > 0) {
+      await prisma.team.update({
+        where: { id: team.id },
+        data: teamUpdateData,
+      });
     }
 
     const existingSubmission = await prisma.submission.findFirst({
