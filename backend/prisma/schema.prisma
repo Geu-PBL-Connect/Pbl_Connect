@@ -177,15 +177,18 @@ model Evaluation {
 }
 
 model TeamPhaseEvaluator {
-  id          String  @id @default(uuid())
-  teamId      String
-  phaseId     String
-  evaluatorId String
-  status      String  @default("PENDING")
-  remarks     String?
-  evaluator   Faculty @relation(fields: [evaluatorId], references: [id], onDelete: Cascade)
-  phase       Phase   @relation(fields: [phaseId], references: [id], onDelete: Cascade)
-  team        Team    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  id              String    @id @default(uuid())
+  teamId          String
+  phaseId         String
+  evaluatorId     String
+  status          String    @default("PENDING")
+  remarks         String?
+  evaluationDate  DateTime?
+  evaluationTime  String?
+  evaluationVenue String?
+  evaluator       Faculty   @relation(fields: [evaluatorId], references: [id], onDelete: Cascade)
+  phase           Phase     @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  team            Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
 
   @@unique([teamId, phaseId])
 }

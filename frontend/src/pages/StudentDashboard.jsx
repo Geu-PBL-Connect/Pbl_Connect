@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { MapPin, CheckCircle2, Clock, Mail, BookOpen, ArrowRight } from 'lucide-react';
+import { MapPin, CheckCircle2, Clock, Mail, BookOpen, ArrowRight, CalendarDays } from 'lucide-react';
 
 const StudentDashboard = () => {
   const [teams, setTeams] = useState([]);
@@ -293,6 +293,7 @@ const StudentDashboard = () => {
               const deadline = phaseConfig?.submissionEnd;
               const userInfo = JSON.parse(localStorage.getItem('userInfo'));
               const isLeader = viewingTeam.leaderId === userInfo?.studentProfileId;
+              const phaseEval = phaseConfig ? viewingTeam.phaseEvaluators?.find(pe => pe.phase?.phaseNumber === phase || pe.phaseId === phaseConfig.id) : null;
 
               return (
                 <Link key={phase} to={`/student/phase/${phase}?teamId=${viewingTeam.id}`} className="block group h-full">
@@ -320,6 +321,34 @@ const StudentDashboard = () => {
                         Deadline: {formatDate(deadline)}
                       </div>
                     )}
+
+                    {/* Evaluation Schedule Info */}
+                    {phaseEval && (phaseEval.evaluationDate || phaseEval.evaluationTime || phaseEval.evaluationVenue) && (
+                      <div className="bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-800/60 rounded-xl p-3 mb-3 space-y-1.5">
+                        <p className="text-[11px] font-bold text-indigo-700 dark:text-indigo-300 uppercase tracking-wider flex items-center gap-1">
+                          <CalendarDays className="w-3.5 h-3.5" /> Evaluation Schedule
+                        </p>
+                        {phaseEval.evaluationDate && (
+                          <p className="text-xs text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                            <CalendarDays className="w-3 h-3 text-indigo-500" />
+                            <span className="font-semibold">{new Date(phaseEval.evaluationDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                            {phaseEval.evaluationTime && <span className="text-gray-500">at <span className="font-semibold text-gray-700 dark:text-gray-200">{phaseEval.evaluationTime}</span></span>}
+                          </p>
+                        )}
+                        {phaseEval.evaluationVenue && (
+                          <p className="text-xs text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                            <MapPin className="w-3 h-3 text-indigo-500" />
+                            <span className="font-semibold">{phaseEval.evaluationVenue}</span>
+                          </p>
+                        )}
+                        {phaseEval.evaluator?.user?.name && (
+                          <p className="text-xs text-gray-700 dark:text-gray-300">
+                            Evaluator: <span className="font-semibold">{phaseEval.evaluator.user.name}</span>
+                          </p>
+                        )}
+                      </div>
+                    )}
+
                     <p className="text-sm text-gray-500 mb-4 flex-1 mt-2">
                       {sub ? (
                         sub.status === 'GRADED' ? "Synopsis & Report graded by mentor. Click to view marks and remarks." : "Synopsis submitted! Awaiting evaluation and grading by mentor."

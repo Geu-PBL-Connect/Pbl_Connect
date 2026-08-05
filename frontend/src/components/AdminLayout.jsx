@@ -11,6 +11,7 @@ import {
   FileText, 
   RefreshCw, 
   Eye, 
+  CalendarDays,
   LogOut 
 } from 'lucide-react';
 import geuLogo from '../assets/geu-logo.webp';
@@ -29,6 +30,7 @@ const AdminLayout = () => {
     { name: 'Results', path: '/admin/results', icon: <FileText size={20} /> },
     { name: 'Re-evaluation', path: '/admin/reevaluation', icon: <RefreshCw size={20} /> },
     { name: 'Micro Mentor', path: '/admin/micro-mentor', icon: <Eye size={20} /> },
+    { name: 'Eval Schedule', path: '/admin/evaluation-schedule', icon: <CalendarDays size={20} /> },
   ];
 
   const userInfoString = localStorage.getItem('userInfo');

@@ -44,6 +44,8 @@ const {
   getSuperMentorTeamsAdmin,
   overrideSuperMentorReview,
   getSuperMentorReport,
+  getEvaluationSchedule,
+  updateEvaluationSchedule,
 } = require('../controllers/adminController');
 const { getInteractions } = require('../controllers/facultyController');
 const { protect, authorize } = require('../middlewares/auth');
@@ -119,5 +121,9 @@ router.get('/teams/pbl/:pblId', getTeamsForPbl);
 // Micro Mentoring
 router.post('/micro-mentor/assign', assignMicroMentors);
 router.get('/micro-mentor/:pblId', getMicroMentorAssignments);
+
+// Evaluation Schedule
+router.get('/evaluation-schedule/:pblId/:phaseId', getEvaluationSchedule);
+router.put('/evaluation-schedule', updateEvaluationSchedule);
 
 module.exports = router;

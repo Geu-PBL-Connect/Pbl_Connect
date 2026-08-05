@@ -12,6 +12,7 @@ import AdminResult from './pages/AdminResult';
 import AdminReevaluation from './pages/AdminReevaluation';
 import AdminMicroMentor from './pages/AdminMicroMentor';
 import AdminSuperMentor from './pages/AdminSuperMentor';
+import AdminEvaluationSchedule from './pages/AdminEvaluationSchedule';
 import AdminLayout from './components/AdminLayout';
 import StudentLayout from './components/StudentLayout';
 import StudentDashboard from './pages/StudentDashboard';
@@ -58,6 +59,7 @@ function App() {
           <Route path="results" element={<AdminResult />} />
           <Route path="reevaluation" element={<AdminReevaluation />} />
           <Route path="micro-mentor" element={<AdminMicroMentor />} />
+          <Route path="evaluation-schedule" element={<AdminEvaluationSchedule />} />
         </Route>
         
         {/* Student Routes */}

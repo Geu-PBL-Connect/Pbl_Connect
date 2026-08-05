@@ -569,22 +569,36 @@ const downloadReport = async (req, res, next) => {
             pbl: { include: { phases: true } }, 
             leader: { include: { user: true } }, 
             mentor: true,
-            phaseEvaluators: { include: { evaluator: true } }
+            phaseEvaluators: { include: { evaluator: { include: { user: true } } } }
           } 
         });
         data = teams.map(t => {
-          const evalP1 = t.phaseEvaluators.find(pe => pe.phaseId === t.pbl.phases?.[0]?.id)?.evaluator;
-          const evalP2 = t.phaseEvaluators.find(pe => pe.phaseId === t.pbl.phases?.[1]?.id)?.evaluator;
-          const evalP3 = t.phaseEvaluators.find(pe => pe.phaseId === t.pbl.phases?.[2]?.id)?.evaluator;
+          const peP1 = t.phaseEvaluators.find(pe => pe.phaseId === t.pbl.phases?.[0]?.id);
+          const peP2 = t.phaseEvaluators.find(pe => pe.phaseId === t.pbl.phases?.[1]?.id);
+          const peP3 = t.phaseEvaluators.find(pe => pe.phaseId === t.pbl.phases?.[2]?.id);
+
+          const fmtDate = (d) => d ? new Date(d).toLocaleDateString() : '';
 
           return {
             'Team ID': t.teamIdFormatted,
             PBL: t.pbl.subjectShort,
             'Leader Name': t.leader.user.name,
             'Mentor Venue': t.mentor?.venue || '',
-            'P1 Evaluator Venue': evalP1?.venue || '',
-            'P2 Evaluator Venue': evalP2?.venue || '',
-            'P3 Evaluator Venue': evalP3?.venue || '',
+            'P1 Evaluator': peP1?.evaluator?.user?.name || '',
+            'P1 Evaluator Venue': peP1?.evaluator?.venue || '',
+            'P1 Eval Date': fmtDate(peP1?.evaluationDate),
+            'P1 Eval Time': peP1?.evaluationTime || '',
+            'P1 Eval Venue': peP1?.evaluationVenue || '',
+            'P2 Evaluator': peP2?.evaluator?.user?.name || '',
+            'P2 Evaluator Venue': peP2?.evaluator?.venue || '',
+            'P2 Eval Date': fmtDate(peP2?.evaluationDate),
+            'P2 Eval Time': peP2?.evaluationTime || '',
+            'P2 Eval Venue': peP2?.evaluationVenue || '',
+            'P3 Evaluator': peP3?.evaluator?.user?.name || '',
+            'P3 Evaluator Venue': peP3?.evaluator?.venue || '',
+            'P3 Eval Date': fmtDate(peP3?.evaluationDate),
+            'P3 Eval Time': peP3?.evaluationTime || '',
+            'P3 Eval Venue': peP3?.evaluationVenue || '',
             'Created At': t.createdAt.toLocaleDateString()
           };
         });
@@ -2221,6 +2235,78 @@ const getSuperMentorReport = async (req, res, next) => {
   }
 };
 
+// @desc    Get Evaluation Schedule for a PBL Phase
+// @route   GET /api/admin/evaluation-schedule/:pblId/:phaseId
+// @access  Private/Admin
+const getEvaluationSchedule = async (req, res, next) => {
+  try {
+    const { pblId, phaseId } = req.params;
+
+    const phase = await prisma.phase.findUnique({ where: { id: phaseId } });
+    if (!phase || phase.pblId !== pblId) {
+      res.status(404);
+      throw new Error('Phase not found or does not belong to this PBL');
+    }
+
+    const schedules = await prisma.teamPhaseEvaluator.findMany({
+      where: { phaseId },
+      include: {
+        team: {
+          select: {
+            id: true,
+            teamIdFormatted: true,
+            projectTitle: true,
+            leader: { include: { user: { select: { name: true } } } },
+          },
+        },
+        evaluator: {
+          include: { user: { select: { name: true } } },
+        },
+      },
+      orderBy: { team: { teamIdFormatted: 'asc' } },
+    });
+
+    res.json(schedules);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Update Evaluation Schedule for multiple teams
+// @route   PUT /api/admin/evaluation-schedule
+// @access  Private/Admin
+const updateEvaluationSchedule = async (req, res, next) => {
+  try {
+    const { schedules } = req.body;
+    // schedules: [{ teamPhaseEvaluatorId, evaluationDate, evaluationTime, evaluationVenue }]
+
+    if (!schedules || !Array.isArray(schedules) || schedules.length === 0) {
+      res.status(400);
+      throw new Error('Please provide an array of schedule updates.');
+    }
+
+    let updatedCount = 0;
+    await prisma.$transaction(async (tx) => {
+      for (const s of schedules) {
+        if (!s.teamPhaseEvaluatorId) continue;
+        await tx.teamPhaseEvaluator.update({
+          where: { id: s.teamPhaseEvaluatorId },
+          data: {
+            evaluationDate: s.evaluationDate ? new Date(s.evaluationDate) : null,
+            evaluationTime: s.evaluationTime || null,
+            evaluationVenue: s.evaluationVenue || null,
+          },
+        });
+        updatedCount++;
+      }
+    });
+
+    res.json({ message: `Successfully updated schedule for ${updatedCount} teams.` });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createTeamAdmin,
   createPbl,
@@ -2265,4 +2351,6 @@ module.exports = {
   getSuperMentorTeamsAdmin,
   overrideSuperMentorReview,
   getSuperMentorReport,
+  getEvaluationSchedule,
+  updateEvaluationSchedule,
 };

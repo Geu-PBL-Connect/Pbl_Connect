@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, X, MapPin, FileText, Users, ArrowRight, Eye, UserCheck } from 'lucide-react';
+import { Search, X, MapPin, FileText, Users, ArrowRight, Eye, UserCheck, CalendarDays, Clock } from 'lucide-react';
 
 const FacultyEvaluatorTeams = () => {
   const [teams, setTeams] = useState([]);
@@ -437,6 +437,35 @@ const FacultyEvaluatorTeams = () => {
                           );
                         })()}
                       </div>
+
+                      {/* Evaluation Schedule */}
+                      {evaluatorRec && (evaluatorRec.evaluationDate || evaluatorRec.evaluationTime || evaluatorRec.evaluationVenue) && (
+                        <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-800/60 space-y-1.5">
+                          <p className="text-[11px] font-bold text-blue-700 dark:text-blue-300 uppercase tracking-wider flex items-center gap-1">
+                            <CalendarDays className="w-3.5 h-3.5" /> Evaluation Schedule
+                          </p>
+                          <div className="flex flex-wrap gap-3 text-xs">
+                            {evaluatorRec.evaluationDate && (
+                              <span className="flex items-center gap-1 text-gray-700 dark:text-gray-300 font-semibold">
+                                <CalendarDays className="w-3 h-3 text-blue-500" />
+                                {new Date(evaluatorRec.evaluationDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                              </span>
+                            )}
+                            {evaluatorRec.evaluationTime && (
+                              <span className="flex items-center gap-1 text-gray-700 dark:text-gray-300 font-semibold">
+                                <Clock className="w-3 h-3 text-blue-500" />
+                                {evaluatorRec.evaluationTime}
+                              </span>
+                            )}
+                            {evaluatorRec.evaluationVenue && (
+                              <span className="flex items-center gap-1 text-gray-700 dark:text-gray-300 font-semibold">
+                                <MapPin className="w-3 h-3 text-blue-500" />
+                                {evaluatorRec.evaluationVenue}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                       <button 
                         onClick={() => {
