@@ -109,10 +109,10 @@ const SuperAdminSettings = () => {
           <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-700 gap-4">
             <button 
               type="submit" 
-              disabled={loading}
+              disabled={saving}
               className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-bold transition-colors shadow-lg shadow-orange-600/30 disabled:opacity-70 flex items-center"
             >
-              {loading ? 'Saving Config...' : 'Save Configuration'}
+              {saving ? 'Saving Config...' : 'Save Configuration'}
             </button>
           </div>
         </form>
