@@ -60,11 +60,11 @@ app.use(
 
 // Global Rate Limiting (Anti-DDoS, but generous enough for 5000 university students on NAT)
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 5 * 1000, // 5 seconds
   max: 1000, // limit each IP to 1000 requests per windowMs
   message: {
     message:
-      "Too many requests from this IP, please try again after 15 minutes.",
+      "Too many requests from this IP, please try again after 5 seconds.",
   },
 });
 app.use(limiter);
