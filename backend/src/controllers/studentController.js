@@ -336,7 +336,7 @@ const getSubmissionForPhase = async (req, res, next) => {
 // @access  Private/Student
 const submitPhase = async (req, res, next) => {
   try {
-    const { teamId, phaseNumber, fileUrls, projectTitle, projectDescription, githubUrl } = req.body;
+    const { teamId, phaseNumber, fileUrls, projectTitle, projectDescription, technologyStack, githubUrl } = req.body;
     const studentId = req.user.studentProfileId;
     let providedSynopsisUrl = req.body.synopsisUrl;
 
@@ -419,6 +419,9 @@ const submitPhase = async (req, res, next) => {
       }
       teamUpdateData.projectDescription = projectDescription.trim();
     }
+    if (technologyStack !== undefined) {
+      teamUpdateData.technologyStack = technologyStack.trim();
+    }
     if (githubUrl !== undefined) {
       teamUpdateData.githubUrl = githubUrl.trim();
     }
@@ -433,6 +436,10 @@ const submitPhase = async (req, res, next) => {
         throw new Error(
           "Project Description (max 250 words) is required for Phase 1 submission.",
         );
+      }
+      if (technologyStack !== undefined && !technologyStack.trim()) {
+        res.status(400);
+        throw new Error("Technology Stack is required for Phase 1 submission.");
       }
       if (!githubUrl || !githubUrl.trim()) {
         res.status(400);
@@ -821,7 +828,7 @@ const respondToInvitation = async (req, res, next) => {
   }
 };
 
-// @desc    Get Peer Evaluation Tasks for Student
+// @desc    Get Peer Evaluation Tasks for Student (Anonymous Review)
 // @route   GET /api/student/micro-mentor/tasks
 // @access  Private/Student
 const getMicroMentorTasks = async (req, res, next) => {
@@ -839,10 +846,21 @@ const getMicroMentorTasks = async (req, res, next) => {
     const assignments = await prisma.microMentorAssignment.findMany({
       where: { reviewerTeamId: { in: teamIds } },
       include: {
-        phase: true,
+        phase: {
+          select: {
+            id: true,
+            phaseNumber: true,
+            instructions: true,
+            evaluationCriteria: true,
+          },
+        },
         examineeTeam: {
-          include: {
-            submissions: true,
+          select: {
+            id: true,
+            projectTitle: true,
+            projectDescription: true,
+            technologyStack: true,
+            customRegistrationData: true,
           },
         },
         evaluations: {
@@ -851,11 +869,19 @@ const getMicroMentorTasks = async (req, res, next) => {
       },
     });
 
-    // Format response to hide examinee identity
+    // Format response to strictly hide examinee identity and exclude any documents/files
     const tasks = assignments.map((assignment) => {
-      const submission = assignment.examineeTeam.submissions.find(
-        (s) => s.phaseId === assignment.phaseId,
-      );
+      let techStack = assignment.examineeTeam?.technologyStack;
+      if (!techStack && assignment.examineeTeam?.customRegistrationData) {
+        const custom = assignment.examineeTeam.customRegistrationData;
+        techStack =
+          custom.technologyStack ||
+          custom.techStack ||
+          custom.technology ||
+          custom["Technology Stack"] ||
+          custom["Tech Stack"] ||
+          null;
+      }
 
       return {
         id: assignment.id,
@@ -863,8 +889,9 @@ const getMicroMentorTasks = async (req, res, next) => {
         isEvaluated: assignment.evaluations.length > 0,
         myEvaluation: assignment.evaluations[0] || null,
         examineeProject: {
-          synopsisUrl: submission ? submission.synopsisUrl : null,
-          fileUrls: submission ? submission.fileUrls : [],
+          projectTitle: assignment.examineeTeam?.projectTitle || "Untitled Project",
+          projectDescription: assignment.examineeTeam?.projectDescription || "No description provided.",
+          technologyStack: techStack || "Not specified",
         },
       };
     });

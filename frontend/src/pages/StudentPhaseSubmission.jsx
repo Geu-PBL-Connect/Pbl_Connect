@@ -5,7 +5,7 @@ import { openPrivateFile } from "../utils/fileViewer";
 import { 
   ShieldCheck, ShieldAlert, Shield, Clock, CheckCircle2, 
   AlertTriangle, FileText, Lock, ExternalLink, RefreshCw, 
-  Edit, Users, GitBranch, Sparkles 
+  Edit, Users, GitBranch, Sparkles, Layers 
 } from "lucide-react";
 
 const StudentPhaseSubmission = () => {
@@ -20,6 +20,7 @@ const StudentPhaseSubmission = () => {
   // Form states
   const [projectTitle, setProjectTitle] = useState("");
   const [projectDescription, setProjectDescription] = useState("");
+  const [technologyStack, setTechnologyStack] = useState("");
   const [githubUrl, setGithubUrl] = useState("");
   const [fileUrl, setFileUrl] = useState("");
   const [reportFile, setReportFile] = useState(null);
@@ -55,6 +56,7 @@ const StudentPhaseSubmission = () => {
         setTeam(currentTeam);
         setProjectTitle(currentTeam.projectTitle || "");
         setProjectDescription(currentTeam.projectDescription || "");
+        setTechnologyStack(currentTeam.technologyStack || "");
         setGithubUrl(currentTeam.githubUrl || "");
 
         const subRes = await axios.get(
@@ -90,6 +92,10 @@ const StudentPhaseSubmission = () => {
         alert(`Project description exceeds the maximum limit of 250 words (current: ${wordCount}). Please summarize it.`);
         return;
       }
+      if (!technologyStack.trim()) {
+        alert("Technology Stack is required for Phase 1.");
+        return;
+      }
       if (!githubUrl.trim()) {
         alert("GitHub Repository Link is required for Phase 1.");
         return;
@@ -105,6 +111,7 @@ const StudentPhaseSubmission = () => {
       formData.append("phaseNumber", phaseId);
       formData.append("projectTitle", projectTitle.trim());
       formData.append("projectDescription", projectDescription.trim());
+      formData.append("technologyStack", technologyStack.trim());
       formData.append("githubUrl", githubUrl.trim());
 
       if (fileUrl) {
@@ -269,6 +276,14 @@ const StudentPhaseSubmission = () => {
                         <p className="text-xs text-gray-600 dark:text-gray-300 mt-1 line-clamp-3">
                           {team.projectDescription}
                         </p>
+                      )}
+                      {team.technologyStack && (
+                        <div className="mt-2 pt-2 border-t border-gray-200/60 dark:border-gray-700/60 flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[11px] font-bold text-gray-500 dark:text-gray-400">Tech Stack:</span>
+                          <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded-md">
+                            {team.technologyStack}
+                          </span>
+                        </div>
                       )}
                     </div>
                   )}
@@ -504,6 +519,29 @@ const StudentPhaseSubmission = () => {
                       />
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         Super Mentor will evaluate project standard based on this description. Keep it clear, professional, and within 250 words.
+                      </p>
+                    </div>
+
+                    {/* Technology Stack */}
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        Technology Stack {isPhase1 && <span className="text-red-500">*</span>}
+                      </label>
+                      <div className="relative">
+                        <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                          <Layers className="w-4 h-4" />
+                        </span>
+                        <input
+                          type="text"
+                          required={isPhase1}
+                          placeholder="e.g. React.js, Node.js, Express, PostgreSQL, TailwindCSS, Docker"
+                          value={technologyStack}
+                          onChange={(e) => setTechnologyStack(e.target.value)}
+                          className="w-full pl-10 pr-4 py-3 border rounded-xl dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none font-medium text-sm"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        List the primary technologies, frameworks, and database tools used.
                       </p>
                     </div>
 

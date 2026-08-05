@@ -87,6 +87,7 @@ model Team {
   customRegistrationData Json?
   projectTitle           String?
   projectDescription     String?
+  technologyStack        String?
   githubUrl              String?
   superMentorId          String?
   superMentorStatus      String                  @default("PENDING")
