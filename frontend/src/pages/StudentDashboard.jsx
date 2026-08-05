@@ -323,22 +323,23 @@ const StudentDashboard = () => {
                     )}
 
                     {/* Evaluation Schedule Info */}
-                    {phaseEval && (phaseEval.evaluationDate || phaseEval.evaluationTime || phaseEval.evaluationVenue) && (
+                    {phaseEval && (phaseEval.evaluationDate || phaseEval.evaluationTime || phaseEval.evaluator?.venue) && (
                       <div className="bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-800/60 rounded-xl p-3 mb-3 space-y-1.5">
                         <p className="text-[11px] font-bold text-indigo-700 dark:text-indigo-300 uppercase tracking-wider flex items-center gap-1">
                           <CalendarDays className="w-3.5 h-3.5" /> Evaluation Schedule
                         </p>
-                        {phaseEval.evaluationDate && (
+                        {(phaseEval.evaluationDate || phaseEval.evaluationTime) && (
                           <p className="text-xs text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
                             <CalendarDays className="w-3 h-3 text-indigo-500" />
-                            <span className="font-semibold">{new Date(phaseEval.evaluationDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                            {phaseEval.evaluationTime && <span className="text-gray-500">at <span className="font-semibold text-gray-700 dark:text-gray-200">{phaseEval.evaluationTime}</span></span>}
+                            {phaseEval.evaluationDate && <span className="font-semibold">{new Date(phaseEval.evaluationDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>}
+                            {phaseEval.evaluationDate && phaseEval.evaluationTime && <span className="text-gray-500">at</span>}
+                            {phaseEval.evaluationTime && <span className="font-semibold text-gray-700 dark:text-gray-200">{phaseEval.evaluationTime}</span>}
                           </p>
                         )}
-                        {phaseEval.evaluationVenue && (
+                        {phaseEval.evaluator?.venue && (
                           <p className="text-xs text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
                             <MapPin className="w-3 h-3 text-indigo-500" />
-                            <span className="font-semibold">{phaseEval.evaluationVenue}</span>
+                            <span className="font-semibold">{phaseEval.evaluator.venue}</span>
                           </p>
                         )}
                         {phaseEval.evaluator?.user?.name && (

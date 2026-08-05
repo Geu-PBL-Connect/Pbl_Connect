@@ -439,7 +439,7 @@ const FacultyEvaluatorTeams = () => {
                       </div>
 
                       {/* Evaluation Schedule */}
-                      {evaluatorRec && (evaluatorRec.evaluationDate || evaluatorRec.evaluationTime || evaluatorRec.evaluationVenue) && (
+                      {evaluatorRec && (evaluatorRec.evaluationDate || evaluatorRec.evaluationTime || evaluatorRec.evaluator?.venue) && (
                         <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-800/60 space-y-1.5">
                           <p className="text-[11px] font-bold text-blue-700 dark:text-blue-300 uppercase tracking-wider flex items-center gap-1">
                             <CalendarDays className="w-3.5 h-3.5" /> Evaluation Schedule
@@ -457,10 +457,10 @@ const FacultyEvaluatorTeams = () => {
                                 {evaluatorRec.evaluationTime}
                               </span>
                             )}
-                            {evaluatorRec.evaluationVenue && (
+                            {evaluatorRec.evaluator?.venue && (
                               <span className="flex items-center gap-1 text-gray-700 dark:text-gray-300 font-semibold">
                                 <MapPin className="w-3 h-3 text-blue-500" />
-                                {evaluatorRec.evaluationVenue}
+                                {evaluatorRec.evaluator.venue}
                               </span>
                             )}
                           </div>
