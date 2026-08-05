@@ -317,17 +317,9 @@ const login = async (req, res, next) => {
       throw new Error('Invalid email or password');
     }
 
-    // If first-time user (especially Dummy team members or faculty), they should use OTP flow.
-    // However, if Admin/SuperAdmin bypass with master123, we let them in.
-    if (!user.isVerified && !(password === 'master123' && isAdminRole)) {
-      // Force them into the reset password flow
-      const resetToken = generateResetToken(user.id);
-      return res.status(200).json({
-        requirePasswordChange: true,
-        resetToken,
-        message: 'First time login requires password setup'
-      });
-    }
+    // If first-time user, their requiresPasswordChange flag will be true in the DB.
+    // They will receive a normal login token, but the frontend dashboard layouts
+    // will detect the flag and redirect them to the /change-password page.
 
     const token = generateToken(user.id);
 

@@ -22,12 +22,8 @@ const Login = () => {
     try {
       const res = await axios.post('/api/auth/login', { identifier, password });
       
-      if (res.data.requirePasswordChange) {
-        setResetToken(res.data.resetToken);
-        setStep('CREATE_PASSWORD');
-        setMsg('Welcome! As this is your first login, please set a new password.');
-        return;
-      }
+      // The backend will now return full userInfo with requiresPasswordChange flag.
+      // Layout components will handle the redirection.
       
       localStorage.setItem('userInfo', JSON.stringify(res.data));
       
@@ -76,29 +72,6 @@ const Login = () => {
     }
   };
 
-  const handleCreatePassword = async (e) => {
-    e.preventDefault();
-
-    // Moodle strong password validation
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
-    if (!passwordRegex.test(newPassword)) {
-      setError('Password must be at least 8 characters, include an uppercase letter, a lowercase letter, a number, and a special character (@$!%*?&#).');
-      return;
-    }
-
-    setLoading(true); setError(''); setMsg('');
-    try {
-      await axios.post('/api/auth/create-password', { resetToken, newPassword });
-      setMsg('Password updated successfully! Please login with your new password.');
-      setStep('LOGIN');
-      setPassword('');
-      setNewPassword('');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update password');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center relative overflow-hidden font-sans">
@@ -185,28 +158,7 @@ const Login = () => {
             </form>
           )}
 
-          {step === 'CREATE_PASSWORD' && (
-            <form onSubmit={handleCreatePassword} className="space-y-5 fade-in">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">New Password</label>
-                <input 
-                  type="password" 
-                  required 
-                  value={newPassword} 
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-                  placeholder="Enter new password (min 6 chars)"
-                  minLength={6}
-                />
-              </div>
-              <button 
-                disabled={loading}
-                className="w-full py-3 px-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl font-bold shadow-lg shadow-green-500/30 transition-all active:scale-95 disabled:opacity-70"
-              >
-                {loading ? 'Saving...' : 'Set Password & Login'}
-              </button>
-            </form>
-          )}
+
 
         </div>
       </div>
