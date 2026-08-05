@@ -30,7 +30,13 @@ const AdminSuperMentor = () => {
 
   useEffect(() => {
     if (selectedPblId) {
+      setSelectedSuperMentorIds([]);
       fetchPblTeams(selectedPblId);
+      fetchFacultiesForPbl(selectedPblId);
+    } else {
+      setTeams([]);
+      setFacultyList([]);
+      setSelectedSuperMentorIds([]);
     }
   }, [selectedPblId]);
 
@@ -40,21 +46,30 @@ const AdminSuperMentor = () => {
       const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
       const config = { headers: { Authorization: `Bearer ${userInfo?.token}` } };
 
-      const [pblRes, facultyRes] = await Promise.all([
-        axios.get("/api/admin/pbl", config),
-        axios.get("/api/admin/faculty", config),
-      ]);
-
+      const pblRes = await axios.get("/api/admin/pbl", config);
       setPbls(pblRes.data);
-      setFacultyList(facultyRes.data);
 
       if (pblRes.data.length > 0) {
-        setSelectedPblId(pblRes.data[0].id);
+        const firstPblId = pblRes.data[0].id;
+        setSelectedPblId(firstPblId);
+        await fetchFacultiesForPbl(firstPblId);
       }
     } catch (err) {
       console.error("Error loading admin data:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchFacultiesForPbl = async (pblId) => {
+    try {
+      const userInfo = JSON.parse(localStorage.getItem("userInfo") || "{}");
+      const res = await axios.get(`/api/admin/faculty?pblId=${pblId}`, {
+        headers: { Authorization: `Bearer ${userInfo?.token}` },
+      });
+      setFacultyList(res.data);
+    } catch (err) {
+      console.error("Error fetching faculties for PBL:", err);
     }
   };
 
@@ -431,46 +446,69 @@ const AdminSuperMentor = () => {
             </p>
 
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
-                Select Super Mentor Faculty ({selectedSuperMentorIds.length} selected):
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 max-h-52 overflow-y-auto p-3 bg-gray-50 dark:bg-gray-900/40 rounded-2xl border border-gray-200 dark:border-gray-700">
-                {facultyList.map((faculty) => {
-                  const isSelected = selectedSuperMentorIds.includes(faculty.id);
-                  return (
-                    <label
-                      key={faculty.id}
-                      className={`p-2.5 rounded-xl border text-xs cursor-pointer flex items-center gap-2 transition-all ${
-                        isSelected
-                          ? "border-purple-500 bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-200 font-bold"
-                          : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300"
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedSuperMentorIds([...selectedSuperMentorIds, faculty.id]);
-                          } else {
-                            setSelectedSuperMentorIds(
-                              selectedSuperMentorIds.filter((id) => id !== faculty.id)
-                            );
-                          }
-                        }}
-                        className="w-3.5 h-3.5 text-purple-600 rounded"
-                      />
-                      <span className="truncate">{faculty.user?.name || faculty.designation || "Faculty"}</span>
-                    </label>
-                  );
-                })}
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                  Select Super Mentor Faculty ({selectedSuperMentorIds.length} of {facultyList.length} selected):
+                </label>
+                <span className="text-xs text-purple-600 dark:text-purple-400 font-semibold">
+                  (Showing only faculties assigned to this PBL)
+                </span>
               </div>
+
+              {facultyList.length === 0 ? (
+                <div className="p-6 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 rounded-2xl text-center">
+                  <span className="text-2xl">⚠️</span>
+                  <p className="font-bold text-amber-800 dark:text-amber-300 text-sm mt-1">
+                    No faculty members are assigned to this PBL yet.
+                  </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
+                    Please go to the <strong className="font-bold">Faculty & Allocation</strong> tab to assign faculty members to this PBL first before allocating Super Mentors.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 max-h-52 overflow-y-auto p-3 bg-gray-50 dark:bg-gray-900/40 rounded-2xl border border-gray-200 dark:border-gray-700">
+                  {facultyList.map((faculty) => {
+                    const isSelected = selectedSuperMentorIds.includes(faculty.id);
+                    return (
+                      <label
+                        key={faculty.id}
+                        className={`p-2.5 rounded-xl border text-xs cursor-pointer flex items-center gap-2 transition-all ${
+                          isSelected
+                            ? "border-purple-500 bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-200 font-bold shadow-xs"
+                            : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-purple-300"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedSuperMentorIds([...selectedSuperMentorIds, faculty.id]);
+                            } else {
+                              setSelectedSuperMentorIds(
+                                selectedSuperMentorIds.filter((id) => id !== faculty.id)
+                              );
+                            }
+                          }}
+                          className="w-3.5 h-3.5 text-purple-600 rounded"
+                        />
+                        <div className="truncate">
+                          <p className="truncate font-semibold">{faculty.user?.name || faculty.designation || "Faculty"}</p>
+                          {faculty.department && (
+                            <p className="text-[10px] text-gray-400 truncate">{faculty.department}</p>
+                          )}
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             <div className="flex items-center gap-3 pt-2">
               <button
                 onClick={handleAutoDistribute}
-                disabled={savingAllocation || selectedSuperMentorIds.length === 0}
+                disabled={savingAllocation || selectedSuperMentorIds.length === 0 || teams.length === 0}
                 className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-xs shadow-md disabled:opacity-50 transition-colors flex items-center gap-2"
               >
                 <span>⚡</span> Auto-Distribute {teams.length} Teams
@@ -479,13 +517,15 @@ const AdminSuperMentor = () => {
                 onClick={() =>
                   setSelectedSuperMentorIds(facultyList.map((f) => f.id))
                 }
-                className="px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-xs hover:bg-gray-200 transition-colors"
+                disabled={facultyList.length === 0}
+                className="px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-xs hover:bg-gray-200 disabled:opacity-50 transition-colors"
               >
-                Select All Faculty
+                Select All ({facultyList.length})
               </button>
               <button
                 onClick={() => setSelectedSuperMentorIds([])}
-                className="px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-xs hover:bg-gray-200 transition-colors"
+                disabled={selectedSuperMentorIds.length === 0}
+                className="px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-xs hover:bg-gray-200 disabled:opacity-50 transition-colors"
               >
                 Clear Selection
               </button>
