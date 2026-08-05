@@ -1,4 +1,5 @@
-const prisma = require('../config/db'); // trigger restart
+const prisma = require("../config/db"); // trigger restart
+const crypto = require("crypto");
 
 // @desc    Get teams where faculty is Mentor
 // @route   GET /api/faculty/mentor/teams
@@ -8,18 +9,20 @@ const getMentoredTeams = async (req, res, next) => {
     const facultyId = req.user.facultyProfileId;
     if (!facultyId) {
       res.status(403);
-      throw new Error('Not registered as a faculty member.');
+      throw new Error("Not registered as a faculty member.");
     }
 
     const teams = await prisma.team.findMany({
       where: { mentorId: facultyId },
       include: {
-        pbl: { include: { phases: true, pblFaculties: { where: { facultyId } } } },
+        pbl: {
+          include: { phases: true, pblFaculties: { where: { facultyId } } },
+        },
         leader: { include: { user: true } },
         members: { include: { student: { include: { user: true } } } },
         submissions: { include: { mentorGrades: true } },
-        examineeAssignments: { include: { evaluations: true } }
-      }
+        examineeAssignments: { include: { evaluations: true } },
+      },
     });
 
     res.json(teams);
@@ -36,27 +39,31 @@ const getEvaluatedTeams = async (req, res, next) => {
     const facultyId = req.user.facultyProfileId;
     if (!facultyId) {
       res.status(403);
-      throw new Error('Not registered as a faculty member.');
+      throw new Error("Not registered as a faculty member.");
     }
 
     const teams = await prisma.team.findMany({
       where: {
         phaseEvaluators: {
           some: {
-            evaluatorId: facultyId
-          }
-        }
+            evaluatorId: facultyId,
+          },
+        },
       },
       include: {
-        pbl: { include: { phases: true, pblFaculties: { where: { facultyId } } } },
+        pbl: {
+          include: { phases: true, pblFaculties: { where: { facultyId } } },
+        },
         leader: { include: { user: true } },
         members: { include: { student: { include: { user: true } } } },
-        submissions: { include: { mentorGrades: { orderBy: { gradedAt: 'desc' } } } },
-        phaseEvaluators: {
-          where: { evaluatorId: facultyId }
+        submissions: {
+          include: { mentorGrades: { orderBy: { gradedAt: "desc" } } },
         },
-        examineeAssignments: { include: { evaluations: true } }
-      }
+        phaseEvaluators: {
+          where: { evaluatorId: facultyId },
+        },
+        examineeAssignments: { include: { evaluations: true } },
+      },
     });
 
     res.json(teams);
@@ -76,72 +83,93 @@ const mentorGradeSubmission = async (req, res, next) => {
 
     if (grade !== 0 && grade !== 1) {
       res.status(400);
-      throw new Error('Grade must be 0 or 1');
+      throw new Error("Grade must be 0 or 1");
     }
 
     const submission = await prisma.submission.findUnique({
       where: { id: submissionId },
-      include: { team: true }
+      include: { team: true },
     });
 
     if (!submission || submission.team.mentorId !== facultyId) {
       res.status(403);
-      throw new Error('Not authorized to grade this submission.');
+      throw new Error("Not authorized to grade this submission.");
     }
 
     const mentorGrade = await prisma.mentorGrade.upsert({
       where: {
         submissionId_mentorId: {
           submissionId,
-          mentorId: facultyId
-        }
+          mentorId: facultyId,
+        },
       },
       update: { grade, remarks, gradedAt: new Date() },
       create: {
         submissionId,
         mentorId: facultyId,
         grade,
-        remarks
-      }
+        remarks,
+      },
     });
 
     await prisma.submission.update({
       where: { id: submissionId },
-      data: { status: 'GRADED' }
+      data: { status: "GRADED" },
     });
 
-    res.json({ message: 'Submission graded successfully', mentorGrade });
+    res.json({ message: "Submission graded successfully", mentorGrade });
 
     // Background Moodle Grade Sync for Mentor Approval
-    const phase = await prisma.phase.findUnique({ where: { id: submission.phaseId } });
+    const phase = await prisma.phase.findUnique({
+      where: { id: submission.phaseId },
+    });
     if (phase?.moodleAssignmentId) {
       // Find all team members to push grade to everyone
       const teamMembers = await prisma.teamMember.findMany({
         where: { teamId: submission.teamId },
-        include: { student: true }
+        include: { student: true },
       });
 
-      const { syncGradeToMoodle } = require('../services/moodleService');
-      
+      const { syncGradeToMoodle } = require("../services/moodleService");
+
       for (const member of teamMembers) {
         const studentProfile = member.student;
-        const moodleIdToUse = studentProfile?.moodleId || studentProfile?.enrollmentNumber;
-        
+        const moodleIdToUse =
+          studentProfile?.moodleId || studentProfile?.enrollmentNumber;
+
         if (moodleIdToUse) {
-          let feedback = remarks || (grade === 1 ? 'Approved by Mentor' : 'Rejected by Mentor');
-          
+          let feedback =
+            remarks ||
+            (grade === 1 ? "Approved by Mentor" : "Rejected by Mentor");
+
           // Append the file link to the feedback so it's accessible in Moodle
           if (submission.synopsisUrl) {
-            feedback += `\n\nSubmitted File (PBL Portal): ${submission.synopsisUrl}`;
+            const signature = crypto
+              .createHmac("sha256", process.env.JWT_SECRET)
+              .update(submission.id)
+              .digest("hex");
+
+            const portalUrl =
+              `${process.env.BACKEND_URL}/api/files/moodle/` +
+              `${submission.id}/${signature}`;
+
+            feedback += `\n\nSubmitted File (PBL Portal): ${portalUrl}`;
           }
 
-          syncGradeToMoodle(moodleIdToUse, phase.moodleAssignmentId, grade, feedback).catch(err => {
-            console.error(`Non-blocking Moodle grade sync error for ${moodleIdToUse}:`, err);
+          syncGradeToMoodle(
+            moodleIdToUse,
+            phase.moodleAssignmentId,
+            grade,
+            feedback,
+          ).catch((err) => {
+            console.error(
+              `Non-blocking Moodle grade sync error for ${moodleIdToUse}:`,
+              err,
+            );
           });
         }
       }
     }
-
   } catch (error) {
     next(error);
   }
@@ -153,18 +181,18 @@ const mentorGradeSubmission = async (req, res, next) => {
 const evaluateStudent = async (req, res, next) => {
   try {
     const { phaseId, studentId } = req.params;
-    const { marksData } = req.body; 
+    const { marksData } = req.body;
     const facultyId = req.user.facultyProfileId;
 
     if (!marksData) {
       res.status(400);
-      throw new Error('Marks data is required.');
+      throw new Error("Marks data is required.");
     }
 
     // Calculate total marks from the JSON marksData object
     let totalMarks = 0;
-    Object.values(marksData).forEach(mark => {
-      if (mark !== 'AB' && !isNaN(Number(mark))) {
+    Object.values(marksData).forEach((mark) => {
+      if (mark !== "AB" && !isNaN(Number(mark))) {
         totalMarks += Number(mark);
       }
     });
@@ -174,8 +202,8 @@ const evaluateStudent = async (req, res, next) => {
         phaseId_studentId_evaluatorId: {
           phaseId,
           studentId,
-          evaluatorId: facultyId
-        }
+          evaluatorId: facultyId,
+        },
       },
       update: { marksData, totalMarks, evaluatedAt: new Date() },
       create: {
@@ -183,11 +211,11 @@ const evaluateStudent = async (req, res, next) => {
         studentId,
         evaluatorId: facultyId,
         marksData,
-        totalMarks
-      }
+        totalMarks,
+      },
     });
 
-    res.json({ message: 'Evaluation submitted successfully', evaluation });
+    res.json({ message: "Evaluation submitted successfully", evaluation });
   } catch (error) {
     next(error);
   }
@@ -200,19 +228,19 @@ const getTeamEvaluations = async (req, res, next) => {
 
     const team = await prisma.team.findUnique({
       where: { id: teamId },
-      include: { members: true }
+      include: { members: true },
     });
 
     if (!team) return res.json([]);
 
-    const studentIds = team.members.map(m => m.studentId);
+    const studentIds = team.members.map((m) => m.studentId);
 
     const evaluations = await prisma.evaluation.findMany({
       where: {
         phaseId,
         evaluatorId: facultyId,
-        studentId: { in: studentIds }
-      }
+        studentId: { in: studentIds },
+      },
     });
 
     res.json(evaluations);
@@ -231,32 +259,32 @@ const finishTeamEvaluation = async (req, res, next) => {
       where: {
         teamId_phaseId: {
           teamId,
-          phaseId
-        }
-      }
+          phaseId,
+        },
+      },
     });
 
     if (!teamPhaseEvaluator || teamPhaseEvaluator.evaluatorId !== facultyId) {
       res.status(403);
-      throw new Error('Not authorized to evaluate this team phase.');
+      throw new Error("Not authorized to evaluate this team phase.");
     }
 
     const updated = await prisma.teamPhaseEvaluator.update({
       where: { id: teamPhaseEvaluator.id },
       data: {
-        status: 'EVALUATED',
-        remarks
-      }
+        status: "EVALUATED",
+        remarks,
+      },
     });
 
     if (projectLevel) {
       await prisma.team.update({
         where: { id: teamId },
-        data: { projectLevel }
+        data: { projectLevel },
       });
     }
 
-    res.json({ message: 'Team evaluation finished', evaluationState: updated });
+    res.json({ message: "Team evaluation finished", evaluationState: updated });
   } catch (error) {
     next(error);
   }
@@ -266,7 +294,7 @@ const getPreviousPhaseRemarks = async (req, res, next) => {
   try {
     const { phaseNumber, teamId } = req.params;
     const currentPhaseNumber = parseInt(phaseNumber);
-    
+
     if (currentPhaseNumber <= 1) {
       return res.json({ remarks: null });
     }
@@ -277,8 +305,8 @@ const getPreviousPhaseRemarks = async (req, res, next) => {
     const previousPhase = await prisma.phase.findFirst({
       where: {
         pblId: team.pblId,
-        phaseNumber: currentPhaseNumber - 1
-      }
+        phaseNumber: currentPhaseNumber - 1,
+      },
     });
 
     if (!previousPhase) return res.json({ remarks: null });
@@ -287,9 +315,9 @@ const getPreviousPhaseRemarks = async (req, res, next) => {
       where: {
         teamId_phaseId: {
           teamId,
-          phaseId: previousPhase.id
-        }
-      }
+          phaseId: previousPhase.id,
+        },
+      },
     });
 
     res.json({ remarks: teamPhaseEvaluator?.remarks || null });
@@ -304,19 +332,19 @@ const getPendingReevaluations = async (req, res, next) => {
     const reevaluations = await prisma.reevaluationAssignment.findMany({
       where: {
         evaluatorId: facultyId,
-        status: 'PENDING'
+        status: "PENDING",
       },
       include: {
         student: {
           include: {
             user: true,
             teamMembers: {
-              include: { team: { include: { pbl: true } } }
-            }
-          }
+              include: { team: { include: { pbl: true } } },
+            },
+          },
         },
-        phase: true
-      }
+        phase: true,
+      },
     });
     res.json(reevaluations);
   } catch (error) {
@@ -330,12 +358,12 @@ const submitReevaluationMarks = async (req, res, next) => {
     const { studentId, phaseId, marksData, totalMarks } = req.body;
 
     const assignment = await prisma.reevaluationAssignment.findUnique({
-      where: { studentId_phaseId: { studentId, phaseId } }
+      where: { studentId_phaseId: { studentId, phaseId } },
     });
 
     if (!assignment || assignment.evaluatorId !== facultyId) {
       res.status(403);
-      throw new Error('Not authorized to re-evaluate this student.');
+      throw new Error("Not authorized to re-evaluate this student.");
     }
 
     // Upsert Evaluation
@@ -344,20 +372,26 @@ const submitReevaluationMarks = async (req, res, next) => {
         phaseId_studentId_evaluatorId: {
           phaseId,
           studentId,
-          evaluatorId: facultyId
-        }
+          evaluatorId: facultyId,
+        },
       },
       update: { marksData, totalMarks },
-      create: { phaseId, studentId, evaluatorId: facultyId, marksData, totalMarks }
+      create: {
+        phaseId,
+        studentId,
+        evaluatorId: facultyId,
+        marksData,
+        totalMarks,
+      },
     });
 
     // Update ReevaluationAssignment status
     await prisma.reevaluationAssignment.update({
       where: { id: assignment.id },
-      data: { status: 'EVALUATED' }
+      data: { status: "EVALUATED" },
     });
 
-    res.json({ message: 'Re-evaluation marks saved successfully', evaluation });
+    res.json({ message: "Re-evaluation marks saved successfully", evaluation });
   } catch (error) {
     next(error);
   }
@@ -374,14 +408,17 @@ const logInteraction = async (req, res, next) => {
 
     const team = await prisma.team.findUnique({
       where: { id: teamId },
-      include: { interactions: true }
+      include: { interactions: true },
     });
 
-    if (!team) throw new Error('Team not found');
-    if (team.mentorId !== facultyId) throw new Error('Not authorized to log interactions for this team.');
-    
+    if (!team) throw new Error("Team not found");
+    if (team.mentorId !== facultyId)
+      throw new Error("Not authorized to log interactions for this team.");
+
     if (team.interactions.length >= 8) {
-      throw new Error('Maximum number of interactions (8) has already been reached for this team.');
+      throw new Error(
+        "Maximum number of interactions (8) has already been reached for this team.",
+      );
     }
 
     const visitNumber = team.interactions.length + 1;
@@ -392,17 +429,19 @@ const logInteraction = async (req, res, next) => {
         mentorId: facultyId,
         visitNumber,
         studentRecords: {
-          create: records.map(r => ({
+          create: records.map((r) => ({
             studentId: r.studentId,
             isPresent: r.isPresent,
-            remark: r.remark || null
-          }))
-        }
+            remark: r.remark || null,
+          })),
+        },
       },
-      include: { studentRecords: true }
+      include: { studentRecords: true },
     });
 
-    res.status(201).json({ message: 'Interaction logged successfully', interaction });
+    res
+      .status(201)
+      .json({ message: "Interaction logged successfully", interaction });
   } catch (error) {
     next(error);
   }
@@ -414,14 +453,14 @@ const logInteraction = async (req, res, next) => {
 const getInteractions = async (req, res, next) => {
   try {
     const { teamId } = req.params;
-    
+
     const interactions = await prisma.interaction.findMany({
       where: { teamId },
-      orderBy: { visitNumber: 'asc' },
+      orderBy: { visitNumber: "asc" },
       include: {
         mentor: { include: { user: true } },
-        studentRecords: { include: { student: { include: { user: true } } } }
-      }
+        studentRecords: { include: { student: { include: { user: true } } } },
+      },
     });
 
     res.json(interactions);
@@ -439,15 +478,15 @@ const updateVenue = async (req, res, next) => {
     const { venue } = req.body;
     if (!facultyId) {
       res.status(403);
-      throw new Error('Not registered as a faculty member.');
+      throw new Error("Not registered as a faculty member.");
     }
 
     const updated = await prisma.faculty.update({
       where: { id: facultyId },
-      data: { venue }
+      data: { venue },
     });
 
-    res.json({ message: 'Venue updated successfully', venue: updated.venue });
+    res.json({ message: "Venue updated successfully", venue: updated.venue });
   } catch (error) {
     next(error);
   }
@@ -461,15 +500,15 @@ const getVenue = async (req, res, next) => {
     const facultyId = req.user.facultyProfileId;
     if (!facultyId) {
       res.status(403);
-      throw new Error('Not registered as a faculty member.');
+      throw new Error("Not registered as a faculty member.");
     }
 
     const faculty = await prisma.faculty.findUnique({
       where: { id: facultyId },
-      select: { venue: true }
+      select: { venue: true },
     });
 
-    res.json({ venue: faculty?.venue || '' });
+    res.json({ venue: faculty?.venue || "" });
   } catch (error) {
     next(error);
   }
@@ -488,5 +527,5 @@ module.exports = {
   logInteraction,
   getInteractions,
   updateVenue,
-  getVenue
+  getVenue,
 };
