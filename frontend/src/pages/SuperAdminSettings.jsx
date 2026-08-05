@@ -17,7 +17,7 @@ const SuperAdminSettings = () => {
   const fetchSettings = async () => {
     try {
       const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-      const { data } = await axios.get('/api/superadmin/settings', {
+      const { data } = await axios.get('/api/super-admin/settings', {
         headers: { Authorization: `Bearer ${userInfo.token}` }
       });
       if (data) {
@@ -39,7 +39,7 @@ const SuperAdminSettings = () => {
     setError('');
     try {
       const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-      const { data } = await axios.post('/api/superadmin/settings', {
+      const { data } = await axios.post('/api/super-admin/settings', {
         moodleUrl,
         moodleWSToken
       }, {
@@ -96,8 +96,8 @@ const SuperAdminSettings = () => {
               <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Moodle Web Services API Token</label>
               <input 
                 type="password" 
-                value={moodleToken} 
-                onChange={(e) => setMoodleToken(e.target.value)}
+                value={moodleWSToken} 
+                onChange={(e) => setMoodleWSToken(e.target.value)}
                 placeholder="Paste your 32-character Moodle token here"
                 className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 font-mono font-medium dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-orange-500 outline-none"
               />
@@ -109,10 +109,10 @@ const SuperAdminSettings = () => {
           <div className="flex justify-end pt-4 border-t border-gray-100 dark:border-gray-700 gap-4">
             <button 
               type="submit" 
-              disabled={loading}
+              disabled={saving}
               className="px-6 py-3 bg-orange-600 hover:bg-orange-700 text-white rounded-xl font-bold transition-colors shadow-lg shadow-orange-600/30 disabled:opacity-70 flex items-center"
             >
-              {loading ? 'Saving Config...' : 'Save Configuration'}
+              {saving ? 'Saving Config...' : 'Save Configuration'}
             </button>
           </div>
         </form>
