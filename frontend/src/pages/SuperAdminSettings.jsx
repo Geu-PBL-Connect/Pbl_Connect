@@ -96,8 +96,8 @@ const SuperAdminSettings = () => {
               <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Moodle Web Services API Token</label>
               <input 
                 type="password" 
-                value={moodleToken} 
-                onChange={(e) => setMoodleToken(e.target.value)}
+                value={moodleWSToken} 
+                onChange={(e) => setMoodleWSToken(e.target.value)}
                 placeholder="Paste your 32-character Moodle token here"
                 className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 font-mono font-medium dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-orange-500 outline-none"
               />
