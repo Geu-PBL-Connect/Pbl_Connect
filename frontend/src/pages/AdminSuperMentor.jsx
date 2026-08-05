@@ -1,5 +1,23 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import {
+  ShieldCheck,
+  ShieldAlert,
+  Activity,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Search,
+  SlidersHorizontal,
+  Users,
+  Sparkles,
+  ExternalLink,
+  FileText,
+  Check,
+  AlertCircle,
+  RefreshCw,
+  X,
+} from "lucide-react";
 
 const AdminSuperMentor = () => {
   const [pbls, setPbls] = useState([]);
@@ -210,7 +228,7 @@ const AdminSuperMentor = () => {
   if (loading) {
     return (
       <div className="p-12 text-center text-gray-500">
-        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-3"></div>
+        <div className="animate-spin w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto mb-3"></div>
         Loading Super Mentor Management Module...
       </div>
     );
@@ -219,28 +237,32 @@ const AdminSuperMentor = () => {
   return (
     <div className="space-y-6 fade-in pb-12">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-purple-900/10 via-indigo-900/10 to-blue-900/10 dark:from-purple-950/40 dark:via-indigo-950/40 dark:to-blue-950/40 p-6 rounded-3xl border border-purple-100 dark:border-purple-900/40 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🛡️</span>
-            <h2 className="text-2xl font-black text-gray-900 dark:text-white">
-              Super Mentor Management & Quality Gate
-            </h2>
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                Super Mentor Quality Gate Management
+              </h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                Allocate Super Mentors, monitor validation metrics, and manage quality reviews.
+              </p>
+            </div>
           </div>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            Allocate Super Mentors across teams, monitor validation metrics, and override reviews.
-          </p>
         </div>
 
         {/* PBL Selector */}
         <div className="flex items-center gap-3">
-          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
             Select PBL:
           </label>
           <select
             value={selectedPblId}
             onChange={(e) => setSelectedPblId(e.target.value)}
-            className="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl text-sm bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-bold focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-sm"
+            className="px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-xl text-xs bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-xs"
           >
             {pbls.map((p) => (
               <option key={p.id} value={p.id}>
@@ -253,24 +275,36 @@ const AdminSuperMentor = () => {
 
       {/* Metrics Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Total Teams</p>
-          <p className="text-2xl font-black text-gray-800 dark:text-white mt-1">{totalTeams}</p>
+        <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Teams</span>
+            <Users className="w-4 h-4 text-gray-400" />
+          </div>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">{totalTeams}</p>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs">
-          <p className="text-xs font-semibold text-amber-500 uppercase tracking-wider">Pending Validation</p>
-          <p className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-1">{pendingCount}</p>
+        <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Pending</span>
+            <Clock className="w-4 h-4 text-amber-500" />
+          </div>
+          <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-2">{pendingCount}</p>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs">
-          <p className="text-xs font-semibold text-emerald-500 uppercase tracking-wider">Approved</p>
-          <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{approvedCount}</p>
+        <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Approved</span>
+            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+          </div>
+          <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-2">{approvedCount}</p>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs">
-          <p className="text-xs font-semibold text-red-500 uppercase tracking-wider">Rejected</p>
-          <p className="text-2xl font-black text-red-600 dark:text-red-400 mt-1">{rejectedCount}</p>
+        <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider">Rejected</span>
+            <XCircle className="w-4 h-4 text-rose-500" />
+          </div>
+          <p className="text-2xl font-bold text-rose-600 dark:text-rose-400 mt-2">{rejectedCount}</p>
         </div>
       </div>
 
@@ -278,24 +312,26 @@ const AdminSuperMentor = () => {
       <div className="flex border-b border-gray-200 dark:border-gray-700">
         <button
           onClick={() => setActiveTab("monitor")}
-          className={`py-3 px-6 font-bold text-sm border-b-2 transition-all flex items-center gap-2 ${
+          className={`py-3 px-6 font-semibold text-xs border-b-2 transition-all flex items-center gap-2 ${
             activeTab === "monitor"
-              ? "border-purple-600 text-purple-600 dark:text-purple-400"
+              ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
               : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400"
           }`}
         >
-          <span>📊</span> Quality Gate Live Monitor ({totalTeams})
+          <Activity className="w-3.5 h-3.5" />
+          Quality Gate Monitor ({totalTeams})
         </button>
 
         <button
           onClick={() => setActiveTab("allocation")}
-          className={`py-3 px-6 font-bold text-sm border-b-2 transition-all flex items-center gap-2 ${
+          className={`py-3 px-6 font-semibold text-xs border-b-2 transition-all flex items-center gap-2 ${
             activeTab === "allocation"
-              ? "border-purple-600 text-purple-600 dark:text-purple-400"
+              ? "border-indigo-600 text-indigo-600 dark:text-indigo-400"
               : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400"
           }`}
         >
-          <span>⚙️</span> Super Mentor Allocation & Auto-Distribution
+          <SlidersHorizontal className="w-3.5 h-3.5" />
+          Allocation & Auto-Distribution
         </button>
       </div>
 
@@ -303,16 +339,16 @@ const AdminSuperMentor = () => {
       {activeTab === "monitor" && (
         <div className="space-y-4">
           {/* Filters and Search Bar */}
-          <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-xs flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
+          <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xs flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-bold text-gray-400 uppercase">Status:</span>
+              <span className="text-xs font-semibold text-gray-400 uppercase">Status:</span>
               {["ALL", "PENDING", "APPROVED", "REJECTED"].map((st) => (
                 <button
                   key={st}
                   onClick={() => setStatusFilter(st)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                     statusFilter === st
-                      ? "bg-purple-600 text-white"
+                      ? "bg-indigo-600 text-white"
                       : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200"
                   }`}
                 >
@@ -322,26 +358,27 @@ const AdminSuperMentor = () => {
             </div>
 
             <div className="relative">
+              <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
-                placeholder="Search Team ID, Leader, Project..."
+                placeholder="Search team, leader, title..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full sm:w-72 px-4 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-xl dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-purple-500"
+                className="w-full sm:w-72 pl-9 pr-4 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-xl dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
           </div>
 
           {/* Teams Table */}
-          <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
-                <thead className="bg-gray-50/80 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700 font-bold uppercase tracking-wider">
+                <thead className="bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700 font-semibold uppercase tracking-wider">
                   <tr>
                     <th className="p-4">Team ID</th>
                     <th className="p-4">Project Title & Repo</th>
                     <th className="p-4">Leader & Members</th>
-                    <th className="p-4">Assigned Regular Mentor</th>
+                    <th className="p-4">Regular Mentor</th>
                     <th className="p-4">Super Mentor</th>
                     <th className="p-4">Validation Status</th>
                     <th className="p-4 text-center">Actions</th>
@@ -350,8 +387,8 @@ const AdminSuperMentor = () => {
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                   {filteredTeams.length === 0 ? (
                     <tr>
-                      <td colSpan="7" className="p-8 text-center text-gray-400 italic">
-                        No teams match your filter/search criteria.
+                      <td colSpan="7" className="p-8 text-center text-gray-400">
+                        No teams match your filter criteria.
                       </td>
                     </tr>
                   ) : (
@@ -361,12 +398,12 @@ const AdminSuperMentor = () => {
                       const isRejected = status === "REJECTED";
 
                       return (
-                        <tr key={team.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
-                          <td className="p-4 font-black text-purple-700 dark:text-purple-400 text-sm">
+                        <tr key={team.id} className="hover:bg-gray-50/60 dark:hover:bg-gray-700/30 transition-colors">
+                          <td className="p-4 font-bold text-indigo-600 dark:text-indigo-400 text-xs">
                             {team.teamIdFormatted}
                           </td>
                           <td className="p-4 max-w-xs">
-                            <p className="font-bold text-gray-900 dark:text-white line-clamp-1">
+                            <p className="font-semibold text-gray-900 dark:text-white truncate">
                               {team.projectTitle || <span className="text-gray-400 font-normal italic">Not submitted</span>}
                             </p>
                             {team.githubUrl && (
@@ -374,42 +411,49 @@ const AdminSuperMentor = () => {
                                 href={team.githubUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1 mt-0.5"
+                                className="text-indigo-600 dark:text-indigo-400 hover:underline inline-flex items-center gap-1 mt-0.5 font-medium"
                               >
-                                🔗 Repo
+                                <ExternalLink className="w-3 h-3" />
+                                Repository
                               </a>
                             )}
                           </td>
                           <td className="p-4">
-                            <p className="font-semibold text-gray-800 dark:text-gray-200">
+                            <p className="font-medium text-gray-800 dark:text-gray-200">
                               {team.leader?.user?.name || "N/A"}
                             </p>
                             <p className="text-gray-400 text-[11px]">{team.members.length} members</p>
                           </td>
-                          <td className="p-4 font-medium text-gray-700 dark:text-gray-300">
+                          <td className="p-4 text-gray-700 dark:text-gray-300">
                             {team.mentor?.user?.name || <span className="text-gray-400 italic">Unassigned</span>}
                           </td>
-                          <td className="p-4 font-bold text-purple-900 dark:text-purple-300">
+                          <td className="p-4 font-medium text-gray-900 dark:text-white">
                             {team.superMentor?.user?.name ? (
-                              <span>🛡️ {team.superMentor.user.name}</span>
+                              <span className="inline-flex items-center gap-1.5 text-indigo-700 dark:text-indigo-300 font-semibold">
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                                {team.superMentor.user.name}
+                              </span>
                             ) : (
                               <span className="text-gray-400 font-normal italic">Not allocated</span>
                             )}
                           </td>
                           <td className="p-4">
                             <span
-                              className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider ${
                                 isApproved
-                                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300"
+                                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
                                   : isRejected
-                                  ? "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300"
-                                  : "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300"
+                                  ? "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
+                                  : "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
                               }`}
                             >
+                              {isApproved && <CheckCircle2 className="w-3 h-3" />}
+                              {isRejected && <XCircle className="w-3 h-3" />}
+                              {!isApproved && !isRejected && <Clock className="w-3 h-3" />}
                               {isApproved ? "Approved" : isRejected ? "Rejected" : "Pending"}
                             </span>
                             {team.superMentorFeedback && (
-                              <p className="text-[10px] text-gray-500 mt-1 line-clamp-1 italic">
+                              <p className="text-[10px] text-gray-500 mt-1 truncate italic">
                                 "{team.superMentorFeedback}"
                               </p>
                             )}
@@ -417,9 +461,9 @@ const AdminSuperMentor = () => {
                           <td className="p-4 text-center">
                             <button
                               onClick={() => handleOpenOverride(team)}
-                              className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-purple-100 dark:hover:bg-purple-900/40 text-purple-700 dark:text-purple-300 rounded-lg font-bold text-xs transition-colors shadow-xs"
+                              className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 rounded-lg font-semibold text-xs transition-colors"
                             >
-                              ⚙️ Override
+                              Override
                             </button>
                           </td>
                         </tr>
@@ -437,45 +481,48 @@ const AdminSuperMentor = () => {
       {activeTab === "allocation" && (
         <div className="space-y-6">
           {/* Auto-Distribution Card */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm space-y-4">
-            <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
-              <span>⚡</span> Equal Auto-Distribution (Round Robin)
-            </h3>
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xs space-y-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                Equal Auto-Distribution (Round Robin)
+              </h3>
+            </div>
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Select the faculty members who will serve as Super Mentors for this PBL. The system will evenly divide all {teams.length} teams among the selected faculty.
             </p>
 
             <div>
               <div className="flex justify-between items-center mb-2">
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   Select Super Mentor Faculty ({selectedSuperMentorIds.length} of {facultyList.length} selected):
                 </label>
-                <span className="text-xs text-purple-600 dark:text-purple-400 font-semibold">
-                  (Showing only faculties assigned to this PBL)
+                <span className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">
+                  Showing faculties assigned to this PBL
                 </span>
               </div>
 
               {facultyList.length === 0 ? (
                 <div className="p-6 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 rounded-2xl text-center">
-                  <span className="text-2xl">⚠️</span>
-                  <p className="font-bold text-amber-800 dark:text-amber-300 text-sm mt-1">
+                  <AlertCircle className="w-6 h-6 text-amber-600 dark:text-amber-400 mx-auto mb-2" />
+                  <p className="font-semibold text-amber-900 dark:text-amber-300 text-sm">
                     No faculty members are assigned to this PBL yet.
                   </p>
                   <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
-                    Please go to the <strong className="font-bold">Faculty & Allocation</strong> tab to assign faculty members to this PBL first before allocating Super Mentors.
+                    Please go to the <strong className="font-semibold">Faculty & Allocation</strong> tab to assign faculty members to this PBL first before allocating Super Mentors.
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 max-h-52 overflow-y-auto p-3 bg-gray-50 dark:bg-gray-900/40 rounded-2xl border border-gray-200 dark:border-gray-700">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 max-h-52 overflow-y-auto p-3 bg-gray-50 dark:bg-gray-900/40 rounded-xl border border-gray-200 dark:border-gray-700">
                   {facultyList.map((faculty) => {
                     const isSelected = selectedSuperMentorIds.includes(faculty.id);
                     return (
                       <label
                         key={faculty.id}
-                        className={`p-2.5 rounded-xl border text-xs cursor-pointer flex items-center gap-2 transition-all ${
+                        className={`p-2.5 rounded-xl border text-xs cursor-pointer flex items-center gap-2.5 transition-all ${
                           isSelected
-                            ? "border-purple-500 bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-200 font-bold shadow-xs"
-                            : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-purple-300"
+                            ? "border-indigo-500 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-900 dark:text-indigo-200 font-semibold"
+                            : "border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-indigo-200"
                         }`}
                       >
                         <input
@@ -490,7 +537,7 @@ const AdminSuperMentor = () => {
                               );
                             }
                           }}
-                          className="w-3.5 h-3.5 text-purple-600 rounded"
+                          className="w-3.5 h-3.5 text-indigo-600 rounded"
                         />
                         <div className="truncate">
                           <p className="truncate font-semibold">{faculty.user?.name || faculty.designation || "Faculty"}</p>
@@ -509,23 +556,24 @@ const AdminSuperMentor = () => {
               <button
                 onClick={handleAutoDistribute}
                 disabled={savingAllocation || selectedSuperMentorIds.length === 0 || teams.length === 0}
-                className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold text-xs shadow-md disabled:opacity-50 transition-colors flex items-center gap-2"
+                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold text-xs shadow-xs disabled:opacity-50 transition-colors flex items-center gap-2"
               >
-                <span>⚡</span> Auto-Distribute {teams.length} Teams
+                <RefreshCw className={`w-3.5 h-3.5 ${savingAllocation ? "animate-spin" : ""}`} />
+                Auto-Distribute {teams.length} Teams
               </button>
               <button
                 onClick={() =>
                   setSelectedSuperMentorIds(facultyList.map((f) => f.id))
                 }
                 disabled={facultyList.length === 0}
-                className="px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-xs hover:bg-gray-200 disabled:opacity-50 transition-colors"
+                className="px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-semibold text-xs hover:bg-gray-200 disabled:opacity-50 transition-colors"
               >
                 Select All ({facultyList.length})
               </button>
               <button
                 onClick={() => setSelectedSuperMentorIds([])}
                 disabled={selectedSuperMentorIds.length === 0}
-                className="px-4 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-xs hover:bg-gray-200 disabled:opacity-50 transition-colors"
+                className="px-4 py-2.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-semibold text-xs hover:bg-gray-200 disabled:opacity-50 transition-colors"
               >
                 Clear Selection
               </button>
@@ -533,11 +581,11 @@ const AdminSuperMentor = () => {
           </div>
 
           {/* Manual Assignment Table */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm space-y-4">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xs space-y-4">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="text-lg font-black text-gray-900 dark:text-white">
-                  Manual Team-by-Team Allocation
+                <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                  Manual Team Allocation
                 </h3>
                 <p className="text-xs text-gray-500">Fine-tune individual Super Mentor mappings per team.</p>
               </div>
@@ -545,7 +593,7 @@ const AdminSuperMentor = () => {
               <button
                 onClick={handleSaveIndividualAssignments}
                 disabled={savingAllocation}
-                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-md disabled:opacity-50 transition-colors"
+                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold text-xs shadow-xs disabled:opacity-50 transition-colors"
               >
                 {savingAllocation ? "Saving..." : "Save Manual Assignments"}
               </button>
@@ -553,7 +601,7 @@ const AdminSuperMentor = () => {
 
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs border-collapse">
-                <thead className="bg-gray-50/80 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700 font-bold uppercase">
+                <thead className="bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700 font-semibold uppercase">
                   <tr>
                     <th className="p-3">Team ID</th>
                     <th className="p-3">Project Title</th>
@@ -564,11 +612,11 @@ const AdminSuperMentor = () => {
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                   {teams.map((team) => (
                     <tr key={team.id}>
-                      <td className="p-3 font-bold text-purple-700 dark:text-purple-400">
+                      <td className="p-3 font-bold text-indigo-600 dark:text-indigo-400">
                         {team.teamIdFormatted}
                       </td>
-                      <td className="p-3 max-w-xs font-semibold text-gray-800 dark:text-white truncate">
-                        {team.projectTitle || <span className="text-gray-400 font-normal italic">Untitled</span>}
+                      <td className="p-3 max-w-xs font-medium text-gray-800 dark:text-white truncate">
+                        {team.projectTitle || <span className="text-gray-400 italic">Untitled</span>}
                       </td>
                       <td className="p-3 text-gray-600 dark:text-gray-300">
                         {team.mentor?.user?.name || "Unassigned"}
@@ -582,7 +630,7 @@ const AdminSuperMentor = () => {
                               [team.id]: e.target.value,
                             })
                           }
-                          className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-xs outline-none focus:ring-1 focus:ring-purple-500 font-medium"
+                          className="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white text-xs outline-none focus:ring-1 focus:ring-indigo-500 font-medium"
                         >
                           <option value="">-- No Super Mentor --</option>
                           {facultyList.map((f) => (
@@ -603,29 +651,29 @@ const AdminSuperMentor = () => {
 
       {/* Admin Override Modal */}
       {overrideTeam && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-2xl w-full max-w-md">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-xl w-full max-w-md border border-gray-200 dark:border-gray-700">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-gray-800 dark:text-white">
+              <h3 className="text-base font-bold text-gray-900 dark:text-white">
                 Admin Override: {overrideTeam.teamIdFormatted}
               </h3>
               <button
                 onClick={() => setOverrideTeam(null)}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={handleSubmitOverride} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                   Override Status
                 </label>
                 <select
                   value={overrideStatus}
                   onChange={(e) => setOverrideStatus(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl dark:bg-gray-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-purple-500 font-bold"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl dark:bg-gray-700 dark:text-white text-xs outline-none focus:ring-2 focus:ring-indigo-500 font-semibold"
                 >
                   <option value="APPROVED">APPROVED (Unlock Mentor Grading)</option>
                   <option value="REJECTED">REJECTED (Require Student Revision)</option>
@@ -634,30 +682,30 @@ const AdminSuperMentor = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                   Admin Remarks / Notes
                 </label>
                 <textarea
-                  rows={3}
+                  rows="3"
                   value={overrideFeedback}
                   onChange={(e) => setOverrideFeedback(e.target.value)}
-                  placeholder="Reason for override..."
-                  className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl dark:bg-gray-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-purple-500"
-                />
+                  placeholder="Optional admin justification..."
+                  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-xl dark:bg-gray-700 dark:text-white text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                ></textarea>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
+              <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => setOverrideTeam(null)}
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl font-bold text-xs"
+                  className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-semibold text-xs hover:bg-gray-200 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
-                  disabled={overrideLoading}
                   type="submit"
-                  className="px-6 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 font-bold text-xs shadow-md"
+                  disabled={overrideLoading}
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold text-xs shadow-xs disabled:opacity-50 transition-colors"
                 >
                   {overrideLoading ? "Saving..." : "Apply Override"}
                 </button>
