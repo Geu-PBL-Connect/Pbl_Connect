@@ -68,9 +68,7 @@ const AdminReports = () => {
       'Team ID': t.teamIdFormatted,
       'Leader': t.leader?.user?.name || 'N/A',
       'Mentor ID': t.mentor?.pblFaculties?.[0]?.mentorIdFormatted || 'N/A',
-      'Mentor Name': t.mentor?.user?.name || 'Unassigned',
-      'Mentor Email': t.mentor?.user?.email || 'N/A',
-      'Mentor Dept': t.mentor?.department || 'N/A'
+      'Mentor Name': t.mentor?.user?.name || 'Unassigned'
     }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(mentorData), 'Mentors');
@@ -86,8 +84,8 @@ const AdminReports = () => {
         'Leader': t.leader?.user?.name || 'N/A',
         'Evaluator ID': pe?.evaluator?.pblFaculties?.[0]?.evaluatorIdFormatted || 'N/A',
         'Evaluator Name': pe?.evaluator?.user?.name || 'Unassigned',
-        'Evaluator Email': pe?.evaluator?.user?.email || 'N/A',
-        'Evaluator Dept': pe?.evaluator?.department || 'N/A'
+        'Evaluator Venue': pe?.evaluator?.venue || '',
+        'Evaluation Time': pe?.evaluationTime || ''
       };
     });
     const wb = XLSX.utils.book_new();
@@ -123,21 +121,19 @@ const AdminReports = () => {
         headers: { Authorization: `Bearer ${userInfo.token}` }
       });
 
-      if (!res.data || res.data.length === 0) {
+      const teamsData = res.data.teams || [];
+      if (teamsData.length === 0) {
         return alert('No Super Mentor data found for this PBL.');
       }
 
-      const exportData = res.data.map(t => ({
+      const exportData = teamsData.map(t => ({
         'Team ID': t.teamIdFormatted,
         'Project Title': t.projectTitle || 'N/A',
         'Project Description': t.projectDescription || 'N/A',
         'GitHub URL': t.githubUrl || 'N/A',
         'Leader Name': t.leader?.user?.name || 'N/A',
-        'Leader Email': t.leader?.user?.email || 'N/A',
         'Regular Mentor': t.mentor?.user?.name || 'Unassigned',
         'Super Mentor Name': t.superMentor?.user?.name || 'Unassigned',
-        'Super Mentor Email': t.superMentor?.user?.email || 'N/A',
-        'Super Mentor Department': t.superMentor?.department || 'N/A',
         'Super Mentor Status': t.superMentorStatus || 'PENDING',
         'Super Mentor Feedback': t.superMentorFeedback || 'N/A'
       }));
