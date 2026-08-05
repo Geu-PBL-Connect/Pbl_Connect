@@ -13,8 +13,9 @@ const ChangePassword = () => {
     e.preventDefault();
     setError('');
 
-    if (password.length < 6) {
-      return setError('Password must be at least 6 characters long.');
+    const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+    if (!passwordRegex.test(password)) {
+      return setError('The password must have at least 8 characters, at least 1 digit(s), at least 1 lower case letter(s), at least 1 upper case letter(s), at least 1 special character(s) such as *, -, or #');
     }
     if (password !== confirmPassword) {
       return setError('Passwords do not match.');

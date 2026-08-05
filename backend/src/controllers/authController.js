@@ -151,9 +151,10 @@ const createPassword = async (req, res, next) => {
       throw new Error('Please provide token and new password');
     }
 
-    if (newPassword.length < 6) {
+    const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
       res.status(400);
-      throw new Error('Password must be at least 6 characters');
+      throw new Error('The password must have at least 8 characters, at least 1 digit(s), at least 1 lower case letter(s), at least 1 upper case letter(s), at least 1 special character(s)');
     }
 
     let decoded;
@@ -346,9 +347,10 @@ const forceChangePassword = async (req, res, next) => {
   try {
     const { newPassword } = req.body;
 
-    if (!newPassword || newPassword.length < 6) {
+    const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+    if (!passwordRegex.test(newPassword)) {
       res.status(400);
-      throw new Error('Password must be at least 6 characters');
+      throw new Error('The password must have at least 8 characters, at least 1 digit(s), at least 1 lower case letter(s), at least 1 upper case letter(s), at least 1 special character(s)');
     }
 
     // Background sync to Moodle if moodleId exists
