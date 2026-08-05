@@ -17,7 +17,7 @@ const SuperAdminSettings = () => {
   const fetchSettings = async () => {
     try {
       const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-      const { data } = await axios.get('/api/superadmin/settings', {
+      const { data } = await axios.get('/api/super-admin/settings', {
         headers: { Authorization: `Bearer ${userInfo.token}` }
       });
       if (data) {
@@ -39,7 +39,7 @@ const SuperAdminSettings = () => {
     setError('');
     try {
       const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-      const { data } = await axios.post('/api/superadmin/settings', {
+      const { data } = await axios.post('/api/super-admin/settings', {
         moodleUrl,
         moodleWSToken
       }, {
