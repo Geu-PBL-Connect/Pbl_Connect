@@ -1,5 +1,10 @@
 const prisma = require("../config/db"); // trigger restart
 const crypto = require("crypto");
+const {
+  serializeMentorRemarks,
+  parseMentorGradeRecord,
+  attachParsedMentorGrades,
+} = require("../utils/mentorGradeHelper");
 
 // @desc    Get teams where faculty is Mentor
 // @route   GET /api/faculty/mentor/teams
@@ -26,7 +31,7 @@ const getMentoredTeams = async (req, res, next) => {
       },
     });
 
-    res.json(teams);
+    res.json(attachParsedMentorGrades(teams));
   } catch (error) {
     next(error);
   }
@@ -67,9 +72,73 @@ const getEvaluatedTeams = async (req, res, next) => {
       },
     });
 
-    res.json(teams);
+    res.json(attachParsedMentorGrades(teams));
   } catch (error) {
     next(error);
+  }
+};
+
+const { syncGradeToMoodle } = require("../services/moodleService");
+
+// Helper to push grade to Moodle for all team members
+const pushGradeToMoodleForTeam = async (teamId, phaseId, grade, feedbackText, submissionId) => {
+  try {
+    const phase = await prisma.phase.findUnique({
+      where: { id: phaseId },
+    });
+    if (!phase?.moodleAssignmentId) return;
+
+    const teamMembers = await prisma.teamMember.findMany({
+      where: { teamId },
+      include: { student: true },
+    });
+
+    let targetSubmission = null;
+    if (submissionId) {
+      targetSubmission = await prisma.submission.findUnique({ where: { id: submissionId } });
+    } else {
+      targetSubmission = await prisma.submission.findFirst({
+        where: { teamId, phaseId },
+        orderBy: { submittedAt: "desc" },
+      });
+    }
+
+    let feedback = feedbackText || (grade === 1 ? "Approved" : "Rejected");
+
+    if (targetSubmission?.synopsisUrl) {
+      const signature = crypto
+        .createHmac("sha256", process.env.JWT_SECRET || "default_secret")
+        .update(targetSubmission.id)
+        .digest("hex");
+
+      const portalUrl =
+        `${process.env.BACKEND_URL || ""}/api/files/moodle/` +
+        `${targetSubmission.id}/${signature}`;
+
+      feedback += `\n\nSubmitted File (PBL Portal): ${portalUrl}`;
+    }
+
+    for (const member of teamMembers) {
+      const studentProfile = member.student;
+      const moodleIdToUse =
+        studentProfile?.moodleId || studentProfile?.enrollmentNumber;
+
+      if (moodleIdToUse) {
+        syncGradeToMoodle(
+          moodleIdToUse,
+          phase.moodleAssignmentId,
+          grade,
+          feedback
+        ).catch((err) => {
+          console.error(
+            `Non-blocking Moodle grade sync error for ${moodleIdToUse}:`,
+            err
+          );
+        });
+      }
+    }
+  } catch (err) {
+    console.error("pushGradeToMoodleForTeam error:", err);
   }
 };
 
@@ -79,7 +148,7 @@ const getEvaluatedTeams = async (req, res, next) => {
 const mentorGradeSubmission = async (req, res, next) => {
   try {
     const { submissionId } = req.params;
-    const { grade, remarks } = req.body; // grade should be 0 or 1
+    const { grade, remarks, studentMarks } = req.body; // grade: 0 or 1, studentMarks: { [studentId]: number }
     const facultyId = req.user.facultyProfileId;
 
     if (grade !== 0 && grade !== 1) {
@@ -89,7 +158,7 @@ const mentorGradeSubmission = async (req, res, next) => {
 
     const submission = await prisma.submission.findUnique({
       where: { id: submissionId },
-      include: { team: true },
+      include: { team: { include: { members: true } } },
     });
 
     if (!submission || submission.team.mentorId !== facultyId) {
@@ -97,15 +166,18 @@ const mentorGradeSubmission = async (req, res, next) => {
       throw new Error("Not authorized to grade this submission.");
     }
 
-    // Strict Super Mentor Quality Gate Check
-    if (submission.team.superMentorStatus !== "APPROVED") {
-      res.status(403);
-      throw new Error(
-        submission.team.superMentorStatus === "REJECTED"
-          ? `Project grading is disabled. Super Mentor rejected this project: "${submission.team.superMentorFeedback || 'Scope needs revision'}". Awaiting student resubmission.`
-          : "Project grading is disabled until Super Mentor approval is received."
-      );
+    // Validate and sanitize studentMarks (each student grade should be 0 to 10)
+    let sanitizedStudentMarks = {};
+    if (studentMarks && typeof studentMarks === "object") {
+      Object.keys(studentMarks).forEach((sId) => {
+        const val = parseFloat(studentMarks[sId]);
+        if (!isNaN(val)) {
+          sanitizedStudentMarks[sId] = Math.min(10, Math.max(0, parseFloat(val.toFixed(2))));
+        }
+      });
     }
+
+    const serializedRemarks = serializeMentorRemarks(remarks, sanitizedStudentMarks);
 
     const mentorGrade = await prisma.mentorGrade.upsert({
       where: {
@@ -114,72 +186,72 @@ const mentorGradeSubmission = async (req, res, next) => {
           mentorId: facultyId,
         },
       },
-      update: { grade, remarks, gradedAt: new Date() },
+      update: { grade, remarks: serializedRemarks, gradedAt: new Date() },
       create: {
         submissionId,
         mentorId: facultyId,
         grade,
-        remarks,
+        remarks: serializedRemarks,
       },
     });
 
-    await prisma.submission.update({
-      where: { id: submissionId },
-      data: { status: "GRADED" },
-    });
+    const parsedMentorGrade = parseMentorGradeRecord(mentorGrade);
 
-    res.json({ message: "Submission graded successfully", mentorGrade });
-
-    // Background Moodle Grade Sync for Mentor Approval
-    const phase = await prisma.phase.findUnique({
-      where: { id: submission.phaseId },
-    });
-    if (phase?.moodleAssignmentId) {
-      // Find all team members to push grade to everyone
-      const teamMembers = await prisma.teamMember.findMany({
-        where: { teamId: submission.teamId },
-        include: { student: true },
+    if (grade === 0) {
+      // Mentor rejected the project/synopsis:
+      // 1. Do NOT forward to Super Mentor.
+      // 2. Mark team rejected by mentor.
+      // 3. Immediately push Grade 0 to LMS with mentor's remarks.
+      // 4. Mark submission as GRADED so team can see rejection & submit new idea.
+      await prisma.team.update({
+        where: { id: submission.teamId },
+        data: {
+          superMentorStatus: "REJECTED",
+          superMentorFeedback: `Rejected by Mentor: ${parsedMentorGrade.cleanRemarks || "Project idea/synopsis needs revision"}`,
+          superMentorReviewedAt: new Date(),
+        },
       });
 
-      const { syncGradeToMoodle } = require("../services/moodleService");
+      await prisma.submission.update({
+        where: { id: submissionId },
+        data: { status: "GRADED" },
+      });
 
-      for (const member of teamMembers) {
-        const studentProfile = member.student;
-        const moodleIdToUse =
-          studentProfile?.moodleId || studentProfile?.enrollmentNumber;
+      pushGradeToMoodleForTeam(
+        submission.teamId,
+        submission.phaseId,
+        0,
+        parsedMentorGrade.cleanRemarks || "Rejected by Mentor",
+        submissionId
+      );
 
-        if (moodleIdToUse) {
-          let feedback =
-            remarks ||
-            (grade === 1 ? "Approved by Mentor" : "Rejected by Mentor");
+      return res.json({
+        message: "Submission rejected by mentor. Grade 0 synced to LMS. Team can now submit a new idea.",
+        mentorGrade: parsedMentorGrade,
+      });
+    } else {
+      // Mentor approved the project (Grade 1):
+      // 1. Do NOT sync to LMS yet!
+      // 2. Forward to Super Mentor for quality check.
+      // 3. Mark team superMentorStatus = PENDING.
+      await prisma.team.update({
+        where: { id: submission.teamId },
+        data: {
+          superMentorStatus: "PENDING",
+          superMentorFeedback: null,
+          superMentorReviewedAt: null,
+        },
+      });
 
-          // Append the file link to the feedback so it's accessible in Moodle
-          if (submission.synopsisUrl) {
-            const signature = crypto
-              .createHmac("sha256", process.env.JWT_SECRET)
-              .update(submission.id)
-              .digest("hex");
+      await prisma.submission.update({
+        where: { id: submissionId },
+        data: { status: "AWAITING_SUPER_MENTOR" },
+      });
 
-            const portalUrl =
-              `${process.env.BACKEND_URL}/api/files/moodle/` +
-              `${submission.id}/${signature}`;
-
-            feedback += `\n\nSubmitted File (PBL Portal): ${portalUrl}`;
-          }
-
-          syncGradeToMoodle(
-            moodleIdToUse,
-            phase.moodleAssignmentId,
-            grade,
-            feedback,
-          ).catch((err) => {
-            console.error(
-              `Non-blocking Moodle grade sync error for ${moodleIdToUse}:`,
-              err,
-            );
-          });
-        }
-      }
+      return res.json({
+        message: "Submission approved by mentor and forwarded to Super Mentor for validation.",
+        mentorGrade: parsedMentorGrade,
+      });
     }
   } catch (error) {
     next(error);
@@ -562,7 +634,7 @@ const getSuperMentoredTeams = async (req, res, next) => {
       orderBy: { createdAt: "desc" },
     });
 
-    res.json(teams);
+    res.json(attachParsedMentorGrades(teams));
   } catch (error) {
     next(error);
   }
@@ -589,6 +661,12 @@ const reviewSuperMentorTeam = async (req, res, next) => {
 
     const team = await prisma.team.findUnique({
       where: { id: teamId },
+      include: {
+        submissions: {
+          include: { mentorGrades: true },
+          orderBy: { submittedAt: "desc" },
+        },
+      },
     });
 
     if (!team) {
@@ -601,26 +679,128 @@ const reviewSuperMentorTeam = async (req, res, next) => {
       throw new Error("You are not assigned as the Super Mentor for this team.");
     }
 
-    const updatedTeam = await prisma.team.update({
-      where: { id: teamId },
-      data: {
-        superMentorStatus: action === "APPROVE" ? "APPROVED" : "REJECTED",
-        superMentorFeedback: action === "REJECT" ? feedback.trim() : (feedback ? feedback.trim() : null),
-        superMentorReviewedAt: new Date(),
-      },
-      include: {
-        pbl: true,
-        leader: { include: { user: true } },
-        mentor: { include: { user: true } },
-        members: { include: { student: { include: { user: true } } } },
-        submissions: true,
-      },
-    });
+    const latestSubmission = team.submissions?.[0];
 
-    res.json({
-      message: `Project ${action === "APPROVE" ? "approved" : "rejected"} successfully`,
-      team: updatedTeam,
-    });
+    if (action === "APPROVE") {
+      // Super Mentor APPROVES:
+      // 1. Update team status to APPROVED
+      // 2. Set submission status to GRADED
+      // 3. Automatically sync Grade 1 to LMS (Moodle)
+      const updatedTeam = await prisma.team.update({
+        where: { id: teamId },
+        data: {
+          superMentorStatus: "APPROVED",
+          superMentorFeedback: feedback ? feedback.trim() : null,
+          superMentorReviewedAt: new Date(),
+        },
+        include: {
+          pbl: true,
+          leader: { include: { user: true } },
+          mentor: { include: { user: true } },
+          members: { include: { student: { include: { user: true } } } },
+          submissions: { include: { mentorGrades: true } },
+        },
+      });
+
+      if (latestSubmission) {
+        await prisma.submission.update({
+          where: { id: latestSubmission.id },
+          data: { status: "GRADED" },
+        });
+
+        // Push Grade 1 to LMS
+        const mentorRemark = latestSubmission.mentorGrades?.[0]?.remarks;
+        const moodleFeedback = feedback?.trim()
+          ? `Approved by Mentor & Super Mentor. Super Mentor Note: ${feedback.trim()}`
+          : (mentorRemark ? `Approved by Mentor: ${mentorRemark}` : "Approved by Mentor & Super Mentor");
+
+        pushGradeToMoodleForTeam(
+          team.id,
+          latestSubmission.phaseId,
+          1,
+          moodleFeedback,
+          latestSubmission.id
+        );
+      }
+
+      return res.json({
+        message: "Project approved by Super Mentor! Grade 1 synced to LMS.",
+        team: updatedTeam,
+      });
+    } else {
+      // Super Mentor REJECTS:
+      // 1. Update team status to REJECTED with feedback
+      // 2. Update mentor grade to 0
+      // 3. Automatically sync Grade 0 to LMS (Moodle)
+      // 4. Mark submission as GRADED so team can resubmit new idea
+      const updatedTeam = await prisma.team.update({
+        where: { id: teamId },
+        data: {
+          superMentorStatus: "REJECTED",
+          superMentorFeedback: feedback.trim(),
+          superMentorReviewedAt: new Date(),
+        },
+        include: {
+          pbl: true,
+          leader: { include: { user: true } },
+          mentor: { include: { user: true } },
+          members: { include: { student: { include: { user: true } } } },
+          submissions: { include: { mentorGrades: true } },
+        },
+      });
+
+      if (latestSubmission) {
+        if (team.mentorId) {
+          const existingGrade = latestSubmission.mentorGrades?.[0];
+          const parsedExisting = parseMentorGradeRecord(existingGrade);
+          const studentMarksToKeep = parsedExisting?.studentMarks || {};
+
+          const serializedRemarks = serializeMentorRemarks(
+            `[Super Mentor Rejected]: ${feedback.trim()}`,
+            studentMarksToKeep
+          );
+
+          await prisma.mentorGrade.upsert({
+            where: {
+              submissionId_mentorId: {
+                submissionId: latestSubmission.id,
+                mentorId: team.mentorId,
+              },
+            },
+            update: {
+              grade: 0,
+              remarks: serializedRemarks,
+              gradedAt: new Date(),
+            },
+            create: {
+              submissionId: latestSubmission.id,
+              mentorId: team.mentorId,
+              grade: 0,
+              remarks: serializedRemarks,
+            },
+          });
+        }
+
+        await prisma.submission.update({
+          where: { id: latestSubmission.id },
+          data: { status: "GRADED" },
+        });
+
+        // Push Grade 0 to LMS
+        pushGradeToMoodleForTeam(
+          team.id,
+          latestSubmission.phaseId,
+          0,
+          `Rejected by Super Mentor: ${feedback.trim()}`,
+          latestSubmission.id
+        );
+      }
+
+      return res.json({
+        message: "Project rejected by Super Mentor. Grade 0 synced to LMS. Team can now submit a new idea.",
+        team: updatedTeam,
+      });
+    }
   } catch (error) {
     next(error);
   }

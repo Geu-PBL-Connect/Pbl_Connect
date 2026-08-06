@@ -179,28 +179,40 @@ const StudentPhaseSubmission = () => {
           const superMentorStatus = team.superMentorStatus || "PENDING";
           const isSuperMentorApproved = superMentorStatus === "APPROVED";
           const isSuperMentorRejected = superMentorStatus === "REJECTED";
+          const isAwaitingSuperMentor = submission?.status === "AWAITING_SUPER_MENTOR";
+          const isPendingMentor = submission?.status === "PENDING";
 
           return (
             <>
-              {/* Super Mentor Status Card (Prominent Quality Gate) */}
+              {/* Quality & Validation Gate Card */}
               <div className="bg-white dark:bg-gray-800 shadow-sm rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-gray-100 dark:border-gray-700">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 flex items-center justify-center font-bold">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold ${
+                      isSuperMentorApproved
+                        ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
+                        : isSuperMentorRejected
+                        ? "bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300"
+                        : isAwaitingSuperMentor
+                        ? "bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300"
+                        : "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300"
+                    }`}>
                       {isSuperMentorApproved ? (
                         <ShieldCheck className="w-5 h-5 text-emerald-600" />
                       ) : isSuperMentorRejected ? (
                         <ShieldAlert className="w-5 h-5 text-rose-600" />
+                      ) : isAwaitingSuperMentor ? (
+                        <Sparkles className="w-5 h-5 text-purple-600" />
                       ) : (
-                        <Shield className="w-5 h-5 text-purple-600" />
+                        <Shield className="w-5 h-5 text-amber-600" />
                       )}
                     </div>
                     <div>
                       <h3 className="text-lg font-bold text-gray-800 dark:text-white">
-                        Super Mentor Validation Gate
+                        Project Evaluation & Validation Gate
                       </h3>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Phase 1 Academic & Technical Quality Verification
+                        Mentor Grading &bull; Super Mentor Quality Verification &bull; LMS Sync
                       </p>
                     </div>
                   </div>
@@ -211,15 +223,20 @@ const StudentPhaseSubmission = () => {
                         ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700"
                         : isSuperMentorRejected
                         ? "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border border-red-200 dark:border-red-700"
+                        : isAwaitingSuperMentor
+                        ? "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border border-purple-200 dark:border-purple-700"
                         : "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-700"
                     }`}
                   >
                     {isSuperMentorApproved && <CheckCircle2 className="w-3.5 h-3.5" />}
                     {isSuperMentorRejected && <ShieldAlert className="w-3.5 h-3.5" />}
-                    {!isSuperMentorApproved && !isSuperMentorRejected && <Clock className="w-3.5 h-3.5" />}
-                    {isSuperMentorApproved && "APPROVED"}
-                    {isSuperMentorRejected && "REJECTED / NEEDS REVISION"}
-                    {!isSuperMentorApproved && !isSuperMentorRejected && "PENDING REVIEW"}
+                    {isAwaitingSuperMentor && <Clock className="w-3.5 h-3.5" />}
+                    {!isSuperMentorApproved && !isSuperMentorRejected && !isAwaitingSuperMentor && <Clock className="w-3.5 h-3.5" />}
+                    
+                    {isSuperMentorApproved && "APPROVED (LMS GRADE: 1)"}
+                    {isSuperMentorRejected && "REJECTED (LMS GRADE: 0)"}
+                    {isAwaitingSuperMentor && "MENTOR APPROVED &bull; AWAITING SUPER MENTOR"}
+                    {!isSuperMentorApproved && !isSuperMentorRejected && !isAwaitingSuperMentor && "PENDING MENTOR REVIEW"}
                   </span>
                 </div>
 
@@ -227,12 +244,12 @@ const StudentPhaseSubmission = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="bg-gray-50 dark:bg-gray-900/40 p-3.5 rounded-xl border border-gray-200/60 dark:border-gray-700/60">
                       <span className="text-xs text-gray-500 dark:text-gray-400 block font-medium">
-                        Assigned Super Mentor:
+                        Assigned Mentor:
                       </span>
                       <p className="font-semibold text-gray-800 dark:text-gray-200 mt-0.5">
-                        {team.superMentor ? (
-                          <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
-                            <CheckCircle2 className="w-4 h-4" /> Assigned
+                        {team.mentor ? (
+                          <span className="text-indigo-600 dark:text-indigo-400 font-bold">
+                            {team.mentor.user?.name || "Assigned"}
                           </span>
                         ) : (
                           <span className="text-gray-400 italic">Not allocated yet</span>
@@ -242,20 +259,15 @@ const StudentPhaseSubmission = () => {
 
                     <div className="bg-gray-50 dark:bg-gray-900/40 p-3.5 rounded-xl border border-gray-200/60 dark:border-gray-700/60">
                       <span className="text-xs text-gray-500 dark:text-gray-400 block font-medium">
-                        Project Repository:
+                        Assigned Super Mentor:
                       </span>
-                      <p className="font-semibold text-gray-800 dark:text-gray-200 mt-0.5 truncate">
-                        {team.githubUrl ? (
-                          <a
-                            href={team.githubUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" /> {team.githubUrl}
-                          </a>
+                      <p className="font-semibold text-gray-800 dark:text-gray-200 mt-0.5">
+                        {team.superMentor ? (
+                          <span className="text-purple-600 dark:text-purple-400 font-bold">
+                            {team.superMentor.user?.name || "Assigned"}
+                          </span>
                         ) : (
-                          <span className="text-gray-400 italic">Not submitted yet</span>
+                          <span className="text-gray-400 italic">Not allocated yet</span>
                         )}
                       </p>
                     </div>
@@ -264,7 +276,7 @@ const StudentPhaseSubmission = () => {
                   {team.projectTitle && (
                     <div className="p-3.5 bg-gray-50 dark:bg-gray-900/40 rounded-xl border border-gray-200/60 dark:border-gray-700/60">
                       <span className="text-xs text-gray-500 dark:text-gray-400 block font-medium">
-                        Project Title:
+                        Current Project Title:
                       </span>
                       <p className="font-bold text-gray-800 dark:text-white mt-0.5">
                         {team.projectTitle}
@@ -285,24 +297,24 @@ const StudentPhaseSubmission = () => {
                     </div>
                   )}
 
-                  {/* Super Mentor Feedback Box */}
+                  {/* Rejection Notice & New Idea Submission Prompt */}
                   {isSuperMentorRejected && (
                     <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800 text-red-900 dark:text-red-200">
                       <div className="flex items-start gap-2">
                         <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                         <div className="flex-1">
                           <h4 className="font-bold text-sm">
-                            Super Mentor Feedback (Changes Required):
+                            Project Proposal Rejected &bull; Grade 0 Synced to LMS
                           </h4>
                           <p className="text-xs mt-1 leading-relaxed bg-white/70 dark:bg-gray-800/70 p-2.5 rounded-lg border border-red-100 dark:border-red-900">
-                            {team.superMentorFeedback || "Please review project scope and resubmit."}
+                            <strong>Reason:</strong> {team.superMentorFeedback || "Project scope was rejected. Please formulate a new project proposal and resubmit."}
                           </p>
                           {isLeader && !isResubmitting && (
                             <button
                               onClick={() => setIsResubmitting(true)}
                               className="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold shadow-sm transition flex items-center gap-1.5"
                             >
-                              <Edit className="w-3.5 h-3.5" /> Edit & Resubmit Project Details
+                              <RefreshCw className="w-3.5 h-3.5" /> Submit New Project Idea & Synopsis
                             </button>
                           )}
                         </div>
@@ -310,20 +322,73 @@ const StudentPhaseSubmission = () => {
                     </div>
                   )}
 
+                  {/* Mentor Grading & Individual Student Score Card */}
+                  {submission?.mentorGrades && submission.mentorGrades.length > 0 && (() => {
+                    const mg = submission.mentorGrades[0];
+                    const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+                    const myMember = team?.members?.find(m => m.student?.userId === userInfo?.id || m.studentId === userInfo?.studentId);
+                    const myStudentId = myMember?.studentId || userInfo?.studentId;
+                    const myMark = mg.studentMarks && myStudentId ? mg.studentMarks[myStudentId] : undefined;
+
+                    return (
+                      <div className="p-4 bg-indigo-50/70 dark:bg-indigo-950/40 rounded-xl border border-indigo-200 dark:border-indigo-800 space-y-2.5">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                            <span className="font-bold text-xs uppercase tracking-wider text-indigo-900 dark:text-indigo-200">
+                              Mentor Phase Assessment
+                            </span>
+                          </div>
+                          {mg.averageMarks !== null && mg.averageMarks !== undefined && (
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-indigo-600 text-white">
+                              Team Average: {mg.averageMarks} / 10
+                            </span>
+                          )}
+                        </div>
+
+                        {myMark !== undefined && (
+                          <div className="flex items-center justify-between p-2.5 bg-white dark:bg-gray-800 rounded-lg border border-indigo-100 dark:border-indigo-900">
+                            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                              Your Individual Score for this Phase:
+                            </span>
+                            <span className="font-black text-sm text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/50 px-2.5 py-0.5 rounded-md">
+                              {myMark} / 10
+                            </span>
+                          </div>
+                        )}
+
+                        {(mg.cleanRemarks || mg.remarks) && (
+                          <div className="text-xs text-gray-600 dark:text-gray-400 bg-white/70 dark:bg-gray-800/70 p-2.5 rounded-lg border border-indigo-100 dark:border-indigo-900">
+                            <strong>Mentor Remarks:</strong> &ldquo;{mg.cleanRemarks || mg.remarks}&rdquo;
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
                   {isSuperMentorApproved && (
                     <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 rounded-xl border border-emerald-200 dark:border-emerald-800 text-xs flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
                       <span>
-                        <strong>Quality Gate Passed!</strong> Your project has been approved by the Super Mentor. Your assigned Mentor is now authorized to evaluate and grade your submissions.
+                        <strong>Quality Gate Passed & LMS Synced!</strong> Your project has been approved by your Mentor and validated by the Super Mentor with Grade 1.
                       </span>
                     </div>
                   )}
 
-                  {!isSuperMentorApproved && !isSuperMentorRejected && (
+                  {isAwaitingSuperMentor && (
+                    <div className="p-3 bg-purple-50 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 rounded-xl border border-purple-200 dark:border-purple-800 text-xs flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-purple-600 shrink-0" />
+                      <span>
+                        <strong>Mentor Approved:</strong> Your Mentor approved your proposal with Grade 1. It is now awaiting final validation by your assigned Super Mentor before syncing to LMS.
+                      </span>
+                    </div>
+                  )}
+
+                  {!isSuperMentorApproved && !isSuperMentorRejected && !isAwaitingSuperMentor && (
                     <div className="p-3 bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 rounded-xl border border-amber-200 dark:border-amber-800 text-xs flex items-center gap-2">
                       <Clock className="w-4 h-4 text-amber-600 shrink-0" />
                       <span>
-                        <strong>Quality Gate Pending:</strong> Project details are awaiting Super Mentor verification. Mentor grading is paused until validation is complete.
+                        <strong>Awaiting Mentor Evaluation:</strong> Your submission is queued for review by your assigned Mentor.
                       </span>
                     </div>
                   )}

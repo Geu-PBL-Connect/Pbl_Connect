@@ -172,6 +172,7 @@ const AdminResult = () => {
                    <th className="px-5 py-4">Student</th>
                    <th className="px-5 py-4">Roll No</th>
                    <th className="px-5 py-4">Project Level</th>
+                   <th className="px-5 py-4">Mentor Marks</th>
                    <th className="px-5 py-4">Total Marks</th>
                    <th className="px-5 py-4">Actions</th>
                  </tr>
@@ -204,6 +205,22 @@ const AdminResult = () => {
                           <span className="text-gray-400 text-xs">N/A</span>
                         )}
                        </td>
+                       <td className="px-5 py-4">
+                         {pd?.studentMentorMarks !== undefined && pd?.studentMentorMarks !== null ? (
+                           <div className="flex flex-col">
+                             <span className="font-bold text-indigo-600 dark:text-indigo-400 text-sm">
+                               {pd.studentMentorMarks} <span className="text-xs font-normal text-gray-400">/ 10</span>
+                             </span>
+                             {pd.teamAverageMentorMarks !== undefined && pd.teamAverageMentorMarks !== null && (
+                               <span className="text-[10px] text-gray-400">
+                                 Avg: {pd.teamAverageMentorMarks}
+                               </span>
+                             )}
+                           </div>
+                         ) : (
+                           <span className="text-gray-400 text-xs italic">N/A</span>
+                         )}
+                        </td>
                        <td className="px-5 py-4 font-black text-gray-800 dark:text-gray-200">
                          {pd?.evaluatorTotalMarks !== null ? (
                             pd.evaluatorTotalMarks === 0 && Object.values(pd.evaluatorMarksData || {}).includes('AB') 

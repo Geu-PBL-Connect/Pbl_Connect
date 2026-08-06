@@ -2,6 +2,7 @@ const prisma = require('../config/db');
 const bcrypt = require('bcrypt');
 const xlsx = require('xlsx');
 const { enrollUserInMoodleCourse } = require('../services/moodleService');
+const { parseMentorGradeRecord, attachParsedMentorGrades } = require('../utils/mentorGradeHelper');
 
 const toRoman = (num) => {
   const roman = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV', 5: 'V', 6: 'VI', 7: 'VII', 8: 'VIII' };
@@ -747,6 +748,142 @@ const getDashboardStats = async (req, res, next) => {
   }
 };
 
+// @desc    Get Faculty Grading Analytics & Criteria Distribution for Admin Dashboard
+// @route   GET /api/admin/faculty-grading-stats
+// @access  Private/Admin
+const getFacultyGradingStats = async (req, res, next) => {
+  try {
+    const { pblId } = req.query;
+
+    const faculties = await prisma.faculty.findMany({
+      include: {
+        user: true,
+        evaluations: {
+          where: pblId ? { phase: { pblId } } : undefined,
+          include: { phase: true }
+        },
+        mentorGrades: {
+          where: pblId ? { submission: { team: { pblId } } } : undefined,
+          include: { submission: { include: { phase: true, team: true } } }
+        },
+        pblFaculties: {
+          where: pblId ? { pblId } : undefined,
+          include: { pbl: true }
+        }
+      },
+      orderBy: { user: { name: 'asc' } }
+    });
+
+    const analytics = faculties.map(fac => {
+      const allEvals = fac.evaluations || [];
+      const mentorGradesList = fac.mentorGrades || [];
+
+      let totalEvaluated = allEvals.length;
+      let totalMarksSum = 0;
+      let distribution = {
+        'Excellent (≥80%)': 0,
+        'Good (65-79%)': 0,
+        'Average (50-64%)': 0,
+        'Needs Improvement (<50%)': 0
+      };
+
+      let criteriaSum = {};
+      let criteriaCount = {};
+
+      allEvals.forEach(ev => {
+        const total = Number(ev.totalMarks) || 0;
+        totalMarksSum += total;
+
+        if (ev.marksData && typeof ev.marksData === 'object') {
+          Object.keys(ev.marksData).forEach(crit => {
+            const val = Number(ev.marksData[crit]);
+            if (!isNaN(val)) {
+              criteriaSum[crit] = (criteriaSum[crit] || 0) + val;
+              criteriaCount[crit] = (criteriaCount[crit] || 0) + 1;
+            }
+          });
+        }
+
+        const pct = total <= 10 ? total * 10 : (total <= 30 ? (total / 30) * 100 : Math.min(100, total));
+        if (pct >= 80) distribution['Excellent (≥80%)']++;
+        else if (pct >= 65) distribution['Good (65-79%)']++;
+        else if (pct >= 50) distribution['Average (50-64%)']++;
+        else distribution['Needs Improvement (<50%)']++;
+      });
+
+      // Mentor individual student marks
+      let mentorMarksTotal = 0;
+      let mentorMarksCount = 0;
+      let mentorApprovedCount = 0;
+      let mentorRejectedCount = 0;
+
+      mentorGradesList.forEach(mg => {
+        if (mg.grade === 1) mentorApprovedCount++;
+        else if (mg.grade === 0) mentorRejectedCount++;
+
+        const parsed = parseMentorGradeRecord(mg);
+        if (parsed?.studentMarks && typeof parsed.studentMarks === 'object') {
+          Object.values(parsed.studentMarks).forEach(m => {
+            const num = Number(m);
+            if (!isNaN(num)) {
+              mentorMarksTotal += num;
+              mentorMarksCount++;
+              
+              // Also add to distribution if no evaluations were made
+              const mentorPct = num * 10;
+              if (totalEvaluated === 0) {
+                if (mentorPct >= 80) distribution['Excellent (≥80%)']++;
+                else if (mentorPct >= 65) distribution['Good (65-79%)']++;
+                else if (mentorPct >= 50) distribution['Average (50-64%)']++;
+                else distribution['Needs Improvement (<50%)']++;
+              }
+            }
+          });
+        }
+      });
+
+      const avgEvaluationScore = totalEvaluated > 0 ? parseFloat((totalMarksSum / totalEvaluated).toFixed(1)) : null;
+      const avgMentorMarks = mentorMarksCount > 0 ? parseFloat((mentorMarksTotal / mentorMarksCount).toFixed(2)) : null;
+
+      const pieData = [
+        { name: 'Excellent (≥80%)', value: distribution['Excellent (≥80%)'], color: '#10B981' },
+        { name: 'Good (65-79%)', value: distribution['Good (65-79%)'], color: '#3B82F6' },
+        { name: 'Average (50-64%)', value: distribution['Average (50-64%)'], color: '#F59E0B' },
+        { name: 'Needs Imp (<50%)', value: distribution['Needs Improvement (<50%)'], color: '#EF4444' }
+      ].filter(d => d.value > 0);
+
+      const criteriaBreakdown = Object.keys(criteriaSum).map(crit => ({
+        criteria: crit,
+        average: parseFloat((criteriaSum[crit] / criteriaCount[crit]).toFixed(1))
+      }));
+
+      const totalActivities = totalEvaluated + mentorGradesList.length;
+
+      return {
+        facultyId: fac.id,
+        name: fac.user?.name || 'Unknown Faculty',
+        email: fac.user?.email || '',
+        department: fac.department || fac.designation || 'Faculty',
+        totalEvaluated,
+        avgEvaluationScore,
+        totalMentoredGrades: mentorGradesList.length,
+        mentorApprovedCount,
+        mentorRejectedCount,
+        avgMentorMarks,
+        pieData: pieData.length > 0 ? pieData : [
+          { name: 'No Graded Data', value: 1, color: '#CBD5E1' }
+        ],
+        criteriaBreakdown,
+        hasActivity: totalActivities > 0
+      };
+    });
+
+    res.json(analytics);
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Get System Settings
 // @route   GET /api/admin/settings
 // @access  Private/SuperAdmin
@@ -1228,9 +1365,11 @@ const getMarksForPbl = async (req, res, next) => {
         team.submissions.forEach(sub => {
           const pNum = sub.phase.phaseNumber;
           if (sub.mentorGrades && sub.mentorGrades.length > 0) {
-             const latestGrade = sub.mentorGrades[0];
-             studentData.phases[pNum].mentorGrade = latestGrade.grade;
-             studentData.phases[pNum].mentorRemarks = latestGrade.remarks;
+             const parsed = parseMentorGradeRecord(sub.mentorGrades[0]);
+             studentData.phases[pNum].mentorGrade = parsed.grade;
+             studentData.phases[pNum].mentorRemarks = parsed.cleanRemarks;
+             studentData.phases[pNum].mentorMarks = parsed.studentMarks?.[student.id] !== undefined ? parsed.studentMarks[student.id] : null;
+             studentData.phases[pNum].allStudentMarks = parsed.studentMarks || {};
           }
         });
 
@@ -1259,6 +1398,24 @@ const getMarksForPbl = async (req, res, next) => {
              studentData.phases[pNum].evaluatorRemarks = pe.remarks;
            }
         });
+
+        // Calculate student's average mentor marks across all graded phases
+        const mentorMarksList = [1, 2, 3]
+          .map(pNum => studentData.phases[pNum]?.mentorMarks)
+          .filter(m => m !== null && m !== undefined && !isNaN(m));
+        
+        studentData.mentorAverageMarks = mentorMarksList.length > 0
+          ? parseFloat((mentorMarksList.reduce((a, b) => a + b, 0) / mentorMarksList.length).toFixed(2))
+          : null;
+
+        // Calculate student's total evaluator marks across phases
+        const evaluatorTotalList = [1, 2, 3]
+          .map(pNum => studentData.phases[pNum]?.evaluatorTotalMarks)
+          .filter(m => m !== null && m !== undefined && !isNaN(m));
+        
+        studentData.evaluatorOverallTotal = evaluatorTotalList.length > 0
+          ? parseFloat(evaluatorTotalList.reduce((a, b) => a + b, 0).toFixed(2))
+          : null;
 
         structuredData.push(studentData);
       });
@@ -2155,7 +2312,7 @@ const getSuperMentorTeamsAdmin = async (req, res, next) => {
   }
 };
 
-// @desc    Admin override Super Mentor review
+// @desc    Admin override for Super Mentor review status
 // @route   POST /api/admin/super-mentor/override/:teamId
 // @access  Private/Admin
 const overrideSuperMentorReview = async (req, res, next) => {
@@ -2181,9 +2338,80 @@ const overrideSuperMentorReview = async (req, res, next) => {
         mentor: { include: { user: true } },
         superMentor: { include: { user: true } },
         members: { include: { student: { include: { user: true } } } },
-        submissions: true,
+        submissions: {
+          include: { mentorGrades: true },
+          orderBy: { submittedAt: "desc" },
+        },
       },
     });
+
+    const latestSubmission = updatedTeam.submissions?.[0];
+    if (latestSubmission && status !== "PENDING") {
+      const isApproved = status === "APPROVED";
+      const { syncGradeToMoodle } = require('../services/moodleService');
+      const crypto = require('crypto');
+
+      if (isApproved) {
+        await prisma.submission.update({
+          where: { id: latestSubmission.id },
+          data: { status: "GRADED" },
+        });
+      } else {
+        if (updatedTeam.mentorId) {
+          await prisma.mentorGrade.upsert({
+            where: {
+              submissionId_mentorId: {
+                submissionId: latestSubmission.id,
+                mentorId: updatedTeam.mentorId,
+              },
+            },
+            update: {
+              grade: 0,
+              remarks: `[Admin Override Rejected]: ${feedback ? feedback.trim() : "Needs revision"}`,
+              gradedAt: new Date(),
+            },
+            create: {
+              submissionId: latestSubmission.id,
+              mentorId: updatedTeam.mentorId,
+              grade: 0,
+              remarks: `[Admin Override Rejected]: ${feedback ? feedback.trim() : "Needs revision"}`,
+            },
+          });
+        }
+        await prisma.submission.update({
+          where: { id: latestSubmission.id },
+          data: { status: "GRADED" },
+        });
+      }
+
+      // Sync grade to Moodle
+      const phase = await prisma.phase.findUnique({
+        where: { id: latestSubmission.phaseId },
+      });
+      if (phase?.moodleAssignmentId) {
+        let moodleFeedback = feedback ? feedback.trim() : (isApproved ? "Approved by Admin" : "Rejected by Admin");
+        if (latestSubmission.synopsisUrl) {
+          const signature = crypto
+            .createHmac("sha256", process.env.JWT_SECRET || "default_secret")
+            .update(latestSubmission.id)
+            .digest("hex");
+          const portalUrl = `${process.env.BACKEND_URL || ""}/api/files/moodle/${latestSubmission.id}/${signature}`;
+          moodleFeedback += `\n\nSubmitted File (PBL Portal): ${portalUrl}`;
+        }
+        for (const member of updatedTeam.members) {
+          const studentProfile = member.student;
+          const moodleIdToUse = studentProfile?.moodleId || studentProfile?.enrollmentNumber;
+          if (moodleIdToUse) {
+            syncGradeToMoodle(
+              moodleIdToUse,
+              phase.moodleAssignmentId,
+              isApproved ? 1 : 0,
+              moodleFeedback
+            ).catch(err => console.error("Admin override moodle sync error:", err));
+          }
+        }
+      }
+    }
 
     res.json({
       message: `Team status overridden to ${status} by Admin.`,
@@ -2353,4 +2581,5 @@ module.exports = {
   getSuperMentorReport,
   getEvaluationSchedule,
   updateEvaluationSchedule,
+  getFacultyGradingStats,
 };

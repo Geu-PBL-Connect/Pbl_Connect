@@ -208,7 +208,9 @@ const AdminReports = () => {
          'Student Name': m.name,
          'Section': m.section,
          'Project Level': m.projectLevel || 'N/A',
-         'Mentor Grade': pd.mentorGrade === 1 ? 'Approved' : pd.mentorGrade === 0 ? 'Needs Revision' : 'Pending',
+         'Mentor Status': pd.mentorGrade === 1 ? 'Approved' : pd.mentorGrade === 0 ? 'Needs Revision' : 'Pending',
+         'Mentor Marks (Out of 10)': pd.studentMentorMarks !== null && pd.studentMentorMarks !== undefined ? pd.studentMentorMarks : 'N/A',
+         'Team Avg Mentor Marks': pd.teamAverageMentorMarks !== null && pd.teamAverageMentorMarks !== undefined ? pd.teamAverageMentorMarks : 'N/A',
          'Mentor Remarks': pd.mentorRemarks || 'N/A'
        };
 
@@ -227,6 +229,51 @@ const AdminReports = () => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(exportData), `Phase_${phaseNum}_Marks`);
     XLSX.writeFile(wb, `${activePblDetails?.subjectShort}_Phase_${phaseNum}_Marks.xlsx`);
+  };
+
+  const handleExportConsolidatedMarks = () => {
+    if (marksData.length === 0) return alert('No marks data found for this PBL.');
+
+    const exportData = marksData.map(m => {
+      let mentorMarksSum = 0;
+      let mentorMarksCount = 0;
+      let evalTotalSum = 0;
+      let hasAnyEval = false;
+
+      [1, 2, 3].forEach(p => {
+        const pd = m.phases[p];
+        if (pd?.studentMentorMarks !== undefined && pd?.studentMentorMarks !== null) {
+          mentorMarksSum += Number(pd.studentMentorMarks);
+          mentorMarksCount++;
+        }
+        if (pd?.evaluatorTotalMarks !== undefined && pd?.evaluatorTotalMarks !== null) {
+          evalTotalSum += Number(pd.evaluatorTotalMarks);
+          hasAnyEval = true;
+        }
+      });
+
+      const overallMentorAvg = mentorMarksCount > 0 ? (mentorMarksSum / mentorMarksCount).toFixed(2) : 'N/A';
+
+      return {
+        'Team ID': m.teamIdFormatted,
+        'Enrollment No': m.enrollmentNumber,
+        'Student Name': m.name,
+        'Section': m.section,
+        'Project Level': m.projectLevel || 'N/A',
+        'Phase 1 Mentor Marks': m.phases[1]?.studentMentorMarks ?? 'N/A',
+        'Phase 1 Eval Marks': m.phases[1]?.evaluatorTotalMarks ?? 'N/A',
+        'Phase 2 Mentor Marks': m.phases[2]?.studentMentorMarks ?? 'N/A',
+        'Phase 2 Eval Marks': m.phases[2]?.evaluatorTotalMarks ?? 'N/A',
+        'Phase 3 Mentor Marks': m.phases[3]?.studentMentorMarks ?? 'N/A',
+        'Phase 3 Eval Marks': m.phases[3]?.evaluatorTotalMarks ?? 'N/A',
+        'Overall Mentor Average (Out of 10)': overallMentorAvg,
+        'Total Evaluator Score': hasAnyEval ? evalTotalSum : 'N/A'
+      };
+    });
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(exportData), 'Consolidated_Marks');
+    XLSX.writeFile(wb, `${activePblDetails?.subjectShort}_Consolidated_Marks_Report.xlsx`);
   };
 
   return (
@@ -382,25 +429,35 @@ const AdminReports = () => {
                 )}
               </div>
 
-              <button 
-                onClick={() => handleExportMarks(activeMarksPhase)}
-                className="px-5 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-sm flex items-center gap-2 transition-all w-full sm:w-auto justify-center text-xs shrink-0"
-              >
-                <FileSpreadsheet className="w-4 h-4" /> Export Phase {activeMarksPhase} Marks to Excel
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                <button 
+                  onClick={() => handleExportMarks(activeMarksPhase)}
+                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-sm flex items-center gap-2 transition-all text-xs"
+                >
+                  <FileSpreadsheet className="w-4 h-4" /> Export Phase {activeMarksPhase}
+                </button>
+
+                <button 
+                  onClick={handleExportConsolidatedMarks}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-sm flex items-center gap-2 transition-all text-xs"
+                >
+                  <Download className="w-4 h-4" /> Export Consolidated (All Phases & Mentor Averages)
+                </button>
+              </div>
            </div>
            
            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
              <table className="w-full text-sm text-left">
                <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-900 dark:text-gray-300">
                  <tr>
-                   <th className="px-5 py-4">Team</th>
-                   <th className="px-5 py-4">Student</th>
-                   <th className="px-5 py-4">Roll No</th>
-                   <th className="px-5 py-4">Section</th>
-                   <th className="px-5 py-4">Project Level</th>
-                   <th className="px-5 py-4">Mentor Status</th>
-                   <th className="px-5 py-4">Evaluator Marks</th>
+                   <th className="px-4 py-3.5">Team</th>
+                   <th className="px-4 py-3.5">Student</th>
+                   <th className="px-4 py-3.5">Roll No</th>
+                   <th className="px-4 py-3.5">Section</th>
+                   <th className="px-4 py-3.5">Project Level</th>
+                   <th className="px-4 py-3.5">Mentor Marks</th>
+                   <th className="px-4 py-3.5">Mentor Status</th>
+                   <th className="px-4 py-3.5">Evaluator Marks</th>
                  </tr>
                </thead>
                <tbody>
@@ -420,25 +477,41 @@ const AdminReports = () => {
                    const pd = m.phases[activeMarksPhase];
                    return (
                      <tr key={idx} className="border-b dark:border-gray-700 hover:bg-gray-50/50 dark:hover:bg-gray-800/50 transition-colors">
-                       <td className="px-5 py-4 font-bold text-indigo-600 dark:text-indigo-400">{m.teamIdFormatted}</td>
-                       <td className="px-5 py-4 font-medium text-gray-900 dark:text-white">{m.name}</td>
-                       <td className="px-5 py-4 text-gray-500">{m.enrollmentNumber}</td>
-                       <td className="px-5 py-4 text-gray-500">{m.section}</td>
-                       <td className="px-5 py-4">
+                       <td className="px-4 py-3 font-bold text-indigo-600 dark:text-indigo-400">{m.teamIdFormatted}</td>
+                       <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{m.name}</td>
+                       <td className="px-4 py-3 text-gray-500">{m.enrollmentNumber}</td>
+                       <td className="px-4 py-3 text-gray-500">{m.section}</td>
+                       <td className="px-4 py-3">
                         {m.projectLevel && m.projectLevel !== 'N/A' ? (
-                          <span className="px-2 py-1 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 rounded text-xs font-bold whitespace-nowrap">
+                          <span className="px-2 py-0.5 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 rounded text-xs font-bold whitespace-nowrap">
                             {m.projectLevel}
                           </span>
                         ) : (
                           <span className="text-gray-400 text-xs">N/A</span>
                         )}
                        </td>
-                       <td className="px-5 py-4">
-                         {pd?.mentorGrade === 1 ? <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-bold uppercase">Approved</span> 
-                          : pd?.mentorGrade === 0 ? <span className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-bold uppercase">Rejected</span> 
-                          : <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-bold uppercase">Pending</span>}
+                       <td className="px-4 py-3">
+                         {pd?.studentMentorMarks !== undefined && pd?.studentMentorMarks !== null ? (
+                           <div className="flex flex-col gap-0.5">
+                             <span className="font-bold text-indigo-600 dark:text-indigo-400 text-sm">
+                               {pd.studentMentorMarks} <span className="text-xs font-normal text-gray-400">/ 10</span>
+                             </span>
+                             {pd.teamAverageMentorMarks !== undefined && pd.teamAverageMentorMarks !== null && (
+                               <span className="text-[10px] text-gray-400">
+                                 Avg: {pd.teamAverageMentorMarks}
+                               </span>
+                             )}
+                           </div>
+                         ) : (
+                           <span className="text-gray-400 text-xs italic">N/A</span>
+                         )}
                        </td>
-                       <td className="px-5 py-4 font-black text-gray-800 dark:text-gray-200">
+                       <td className="px-4 py-3">
+                         {pd?.mentorGrade === 1 ? <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-bold uppercase">Approved</span> 
+                          : pd?.mentorGrade === 0 ? <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-bold uppercase">Rejected</span> 
+                          : <span className="px-2 py-0.5 bg-gray-100 text-gray-600 rounded text-xs font-bold uppercase">Pending</span>}
+                       </td>
+                       <td className="px-4 py-3 font-black text-gray-800 dark:text-gray-200">
                          {pd?.evaluatorTotalMarks !== null ? (
                             pd.evaluatorTotalMarks === 0 && Object.values(pd.evaluatorMarksData || {}).includes('AB') ? (
                               <div className="flex items-center space-x-3">

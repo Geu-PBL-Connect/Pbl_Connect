@@ -2,6 +2,7 @@ const prisma = require("../config/db");
 const bcrypt = require("bcrypt");
 const { enrollUserInMoodleCourse } = require("../services/moodleService");
 const { generateSignedUrl } = require("../services/s3Service");
+const { parseMentorGradeRecord, attachParsedMentorGrades } = require("../utils/mentorGradeHelper");
 
 // @desc    Create a Team
 // @route   POST /api/student/team
@@ -325,7 +326,7 @@ const getSubmissionForPhase = async (req, res, next) => {
       include: { mentorGrades: true },
     });
 
-    res.json(submission);
+    res.json(attachParsedMentorGrades(submission));
   } catch (error) {
     next(error);
   }
@@ -448,11 +449,10 @@ const submitPhase = async (req, res, next) => {
         );
       }
 
-      // If team was previously rejected by Super Mentor, reset to PENDING on resubmission
-      if (team.superMentorStatus === "REJECTED") {
-        teamUpdateData.superMentorStatus = "PENDING";
-        teamUpdateData.superMentorFeedback = null;
-      }
+      // Reset superMentorStatus on submission / resubmission
+      teamUpdateData.superMentorStatus = "PENDING";
+      teamUpdateData.superMentorFeedback = null;
+      teamUpdateData.superMentorReviewedAt = null;
     }
 
     if (Object.keys(teamUpdateData).length > 0) {

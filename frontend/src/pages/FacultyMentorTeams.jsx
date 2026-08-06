@@ -17,6 +17,7 @@ const FacultyMentorTeams = () => {
   const [selectedTeamForGrade, setSelectedTeamForGrade] = useState(null);
   const [grade, setGrade] = useState(1);
   const [remarks, setRemarks] = useState('');
+  const [studentMarks, setStudentMarks] = useState({});
   const [gradeLoading, setGradeLoading] = useState(false);
   
   // Venue State
@@ -139,13 +140,15 @@ const FacultyMentorTeams = () => {
       const userInfo = JSON.parse(localStorage.getItem('userInfo'));
       await axios.post(`/api/faculty/mentor/grade/${selectedSubmission.id}`, {
         grade: parseInt(grade),
-        remarks
+        remarks,
+        studentMarks
       }, {
         headers: { Authorization: `Bearer ${userInfo?.token}` }
       });
-      alert('Grade submitted successfully!');
+      alert('Grade and individual student marks submitted successfully!');
       setSelectedSubmission(null);
       setSelectedTeamForGrade(null);
+      setStudentMarks({});
       fetchTeams();
     } catch (err) {
       alert(err.response?.data?.message || 'Failed to submit grade');
@@ -234,6 +237,7 @@ const FacultyMentorTeams = () => {
           {filteredTeams.map((team) => {
             const isSuperMentorApproved = team.superMentorStatus === 'APPROVED';
             const isSuperMentorRejected = team.superMentorStatus === 'REJECTED';
+            const isSuperMentorPending = team.superMentorStatus === 'PENDING';
 
             return (
               <div key={team.id} className="bg-white dark:bg-gray-800 shadow-sm rounded-2xl border border-gray-100 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
@@ -241,7 +245,7 @@ const FacultyMentorTeams = () => {
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="text-xl font-bold text-primary">{team.teamIdFormatted}</h3>
-                      {/* Super Mentor Status Badge */}
+                      {/* Quality Gate Status Badge */}
                       <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1.5 ${
                         isSuperMentorApproved
                           ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200'
@@ -256,7 +260,7 @@ const FacultyMentorTeams = () => {
                         ) : (
                           <Shield className="w-3.5 h-3.5" />
                         )}
-                        {isSuperMentorApproved ? 'Super Mentor: Approved' : isSuperMentorRejected ? 'Super Mentor: Rejected' : 'Super Mentor: Pending'}
+                        {isSuperMentorApproved ? 'Super Mentor: Approved' : isSuperMentorRejected ? 'Rejected (Needs New Idea)' : 'Super Mentor: Pending'}
                       </span>
                     </div>
                     <p className="text-sm text-gray-500 mt-1">{team.pbl.subject} (Sem {team.pbl.semester})</p>
@@ -296,21 +300,15 @@ const FacultyMentorTeams = () => {
                   </div>
                 )}
 
-                {/* Super Mentor Quality Gate Alert for Mentor */}
-                {!isSuperMentorApproved && (
-                  <div className={`mb-4 p-3 rounded-xl border text-xs leading-relaxed ${
-                    isSuperMentorRejected
-                      ? 'bg-red-50 dark:bg-red-900/20 border-red-200 text-red-800 dark:text-red-300'
-                      : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 text-amber-800 dark:text-amber-300'
-                  }`}>
+                {/* Super Mentor Feedback Banner if Rejected */}
+                {isSuperMentorRejected && (
+                  <div className="mb-4 p-3 rounded-xl border text-xs leading-relaxed bg-red-50 dark:bg-red-900/20 border-red-200 text-red-800 dark:text-red-300">
                     <div className="flex items-center gap-1.5 font-bold mb-1">
-                      <Lock className="w-3.5 h-3.5" />
-                      <span>Quality Gate Enforced: {isSuperMentorRejected ? 'Super Mentor Rejected Project' : 'Super Mentor Validation Pending'}</span>
+                      <ShieldAlert className="w-3.5 h-3.5 text-red-600" />
+                      <span>Project Rejected & Grade 0 Synced to LMS</span>
                     </div>
                     <p>
-                      {isSuperMentorRejected
-                        ? `Super Mentor feedback: "${team.superMentorFeedback || 'Requires revision'}". Mentor grading is locked until student resubmits and receives approval.`
-                        : 'Grading is locked until the assigned Super Mentor approves the project title, description, and repository.'}
+                      <strong>Feedback:</strong> "{team.superMentorFeedback || 'Scope / Idea needs revision'}". The team leader must submit a new project idea & synopsis.
                     </p>
                   </div>
                 )}
@@ -324,6 +322,7 @@ const FacultyMentorTeams = () => {
                       const phaseNum = team.pbl.phases?.find(p => p.id === sub.phaseId)?.phaseNumber || '1';
                       const isResubmitted = sub.status === 'PENDING' && sub.mentorGrades && sub.mentorGrades.length > 0;
                       const lastGrade = sub.mentorGrades?.[0];
+                      const isAwaitingSuperMentor = sub.status === 'AWAITING_SUPER_MENTOR';
 
                       return (
                         <div key={sub.id} className={`p-4 rounded-xl border transition-all ${
@@ -340,17 +339,25 @@ const FacultyMentorTeams = () => {
                                 <span className="px-2.5 py-0.5 bg-amber-500 text-white rounded-full text-xs font-bold uppercase tracking-wider shadow-xs flex items-center gap-1">
                                   <RefreshCw className="w-3 h-3 animate-spin" /> Resubmitted
                                 </span>
+                              ) : isAwaitingSuperMentor ? (
+                                <span className="px-2.5 py-0.5 bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 rounded-full text-xs font-bold uppercase flex items-center gap-1">
+                                  <Clock className="w-3 h-3" /> Mentor Approved &bull; Awaiting Super Mentor
+                                </span>
                               ) : sub.status === 'PENDING' ? (
                                 <span className="px-2.5 py-0.5 bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300 rounded-full text-xs font-bold uppercase">
-                                  Pending Grade
+                                  Pending Mentor Grade
+                                </span>
+                              ) : isSuperMentorApproved ? (
+                                <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 rounded-full text-xs font-bold uppercase flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3" /> Super Mentor Approved (LMS Synced: 1)
                                 </span>
                               ) : lastGrade && lastGrade.grade === 0 ? (
                                 <span className="px-2.5 py-0.5 bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 rounded-full text-xs font-bold uppercase flex items-center gap-1">
-                                  <XCircle className="w-3 h-3" /> Rejected (Grade 0)
+                                  <XCircle className="w-3 h-3" /> Rejected (Grade 0 Synced)
                                 </span>
                               ) : (
                                 <span className="px-2.5 py-0.5 bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300 rounded-full text-xs font-bold uppercase flex items-center gap-1">
-                                  <CheckCircle2 className="w-3 h-3" /> Graded (Approved - Grade 1)
+                                  <CheckCircle2 className="w-3 h-3" /> Graded (Grade 1)
                                 </span>
                               )}
                             </div>
@@ -366,63 +373,92 @@ const FacultyMentorTeams = () => {
                               )}
                             </div>
 
-                            {(isResubmitted || (lastGrade && lastGrade.grade === 0)) && lastGrade && (
-                              <div className="mt-2 p-2.5 bg-red-100/80 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 rounded-lg text-xs leading-relaxed">
-                                <span className="font-bold uppercase text-red-600 dark:text-red-400 flex items-center gap-1">
-                                  <AlertTriangle className="w-3.5 h-3.5" />
-                                  {isResubmitted ? "Previous Rejection History:" : "Current Rejection Status:"}
-                                </span>
-                                <strong>Grade:</strong> 0 &bull; <strong>Remarks:</strong> &ldquo;{lastGrade.remarks || 'Needs improvement'}&rdquo;
-                              </div>
-                            )}
+                            {/* Mentor Grade & Individual Student Marks Breakdown */}
+                            {lastGrade && (
+                              <div className={`p-2.5 rounded-xl border text-xs space-y-1.5 ${
+                                  lastGrade.grade === 0 
+                                    ? 'bg-red-100/80 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200'
+                                    : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200'
+                                }`}>
+                                  <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <span className="font-bold uppercase flex items-center gap-1">
+                                      {lastGrade.grade === 0 ? <AlertTriangle className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                                      {lastGrade.grade === 0 ? "Rejection Status:" : "Mentor Feedback:"}
+                                    </span>
+                                    {lastGrade.averageMarks !== null && lastGrade.averageMarks !== undefined && (
+                                      <span className="px-2 py-0.5 rounded-full text-[11px] font-black bg-indigo-600 text-white shadow-xs">
+                                        🎯 Mentor Team Avg: {lastGrade.averageMarks} / 10
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <strong>Decision:</strong> {lastGrade.grade === 1 ? 'Approved' : 'Needs Revision'} &bull; <strong>Remarks:</strong> &ldquo;{lastGrade.cleanRemarks || lastGrade.remarks || 'N/A'}&rdquo;
+                                  </div>
 
-                            {(() => {
-                              const mmAssignment = team.examineeAssignments?.find(a => a.phaseId === sub.phaseId);
-                              if (!mmAssignment) return null;
-                              const evalsCount = mmAssignment.evaluations?.length || 0;
-                              const avgScore = evalsCount > 0
-                                ? (mmAssignment.evaluations.reduce((sum, ev) => sum + ev.totalMarks, 0) / evalsCount).toFixed(2)
-                                : 'Pending';
-                              return (
-                                <div className="mt-2 text-xs font-semibold text-indigo-700 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-300 p-2 rounded border border-indigo-100 dark:border-indigo-800 flex items-center gap-1.5">
-                                  <Users className="w-3.5 h-3.5" /> Peer Review Avg Score: {avgScore} ({evalsCount} reviews)
+                                  {/* Individual student marks preview pills */}
+                                  {lastGrade.studentMarks && Object.keys(lastGrade.studentMarks).length > 0 && (
+                                    <div className="pt-1 border-t border-current/10 flex flex-wrap gap-1.5">
+                                      {team.members.map(m => {
+                                        const mark = lastGrade.studentMarks[m.studentId];
+                                        if (mark === undefined || mark === null) return null;
+                                        return (
+                                          <span key={m.id} className="px-2 py-0.5 rounded bg-white/70 dark:bg-black/20 text-[11px] font-semibold">
+                                            {m.student?.user?.name?.split(' ')[0]}: <strong className="text-indigo-600 dark:text-indigo-400">{mark}/10</strong>
+                                          </span>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
                                 </div>
-                              );
-                            })()}
-                          </div>
+                              )}
 
-                          {/* Grade Action Button */}
-                          {isSuperMentorApproved ? (
+                              {(() => {
+                                const mmAssignment = team.examineeAssignments?.find(a => a.phaseId === sub.phaseId);
+                                if (!mmAssignment) return null;
+                                const evalsCount = mmAssignment.evaluations?.length || 0;
+                                const avgScore = evalsCount > 0
+                                  ? (mmAssignment.evaluations.reduce((sum, ev) => sum + ev.totalMarks, 0) / evalsCount).toFixed(2)
+                                  : 'Pending';
+                                return (
+                                  <div className="mt-2 text-xs font-semibold text-indigo-700 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-300 p-2 rounded border border-indigo-100 dark:border-indigo-800 flex items-center gap-1.5">
+                                    <Users className="w-3.5 h-3.5" /> Peer Review Avg Score: {avgScore} ({evalsCount} reviews)
+                                  </div>
+                                );
+                              })()}
+                            </div>
+
+                            {/* Grade Action Button */}
                             <button 
                               onClick={() => {
                                 setSelectedSubmission(sub);
                                 setSelectedTeamForGrade(team);
-                                setGrade(1);
-                                setRemarks('');
+                                setGrade(lastGrade?.grade !== undefined ? lastGrade.grade : 1);
+                                setRemarks(lastGrade?.cleanRemarks || lastGrade?.remarks || '');
+                                
+                                const initialMarks = {};
+                                team.members.forEach(m => {
+                                  initialMarks[m.studentId] = lastGrade?.studentMarks?.[m.studentId] !== undefined
+                                    ? lastGrade.studentMarks[m.studentId]
+                                    : 10;
+                                });
+                                setStudentMarks(initialMarks);
                               }}
                               className={`px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition whitespace-nowrap ${
                                 isResubmitted 
                                   ? 'bg-amber-600 hover:bg-amber-700 text-white' 
                                   : sub.status === 'PENDING'
                                   ? 'bg-primary hover:bg-blue-600 text-white'
+                                  : isAwaitingSuperMentor
+                                  ? 'bg-purple-600 hover:bg-purple-700 text-white'
                                   : 'bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white'
                               }`}
                             >
-                              {isResubmitted ? 'Evaluate Resubmission' : sub.status === 'PENDING' ? 'Grade Now' : 'Edit Grade'}
+                              {isResubmitted ? 'Evaluate Resubmission' : sub.status === 'PENDING' ? 'Grade & Forward' : isAwaitingSuperMentor ? 'Update Mentor Grade' : 'Edit Grade'}
                             </button>
-                          ) : (
-                            <button 
-                              disabled
-                              title="Grading is locked until Super Mentor approves project details"
-                              className="px-4 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-400 dark:text-gray-500 rounded-xl text-xs font-bold cursor-not-allowed flex items-center gap-1.5"
-                            >
-                              <Lock className="w-3.5 h-3.5" /> Grade Locked
-                            </button>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
+                          </div>
+                        );
+                      })
+                    )}
                 </div>
               </div>
             );
@@ -640,40 +676,172 @@ const FacultyMentorTeams = () => {
       )}
 
       {/* Grading Modal */}
-      {selectedSubmission && (
+      {selectedSubmission && selectedTeamForGrade && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-2xl w-full max-w-md">
-            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Grade Submission</h3>
-            
-            <form onSubmit={handleGradeSubmit} className="space-y-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Grade</label>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-white">Grade Submission</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  Team {selectedTeamForGrade.teamIdFormatted} &bull; Phase {selectedSubmission.phase?.phaseNumber || ''}
+                </p>
+              </div>
+              <button 
+                onClick={() => { setSelectedSubmission(null); setSelectedTeamForGrade(null); }} 
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xl font-bold"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <form onSubmit={handleGradeSubmit} className="space-y-5">
+              {/* Overall Decision */}
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+                  Mentor Evaluation Decision
+                </label>
                 <select 
                   value={grade}
                   onChange={(e) => setGrade(e.target.value)}
-                  className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-4 py-2.5 border rounded-xl dark:bg-gray-700 dark:border-gray-600 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-sm"
                 >
-                  <option value={1}>1 - Approved</option>
-                  <option value={0}>0 - Needs Revision</option>
+                  <option value={1}>Grade 1: Approve Project (Forward to Super Mentor)</option>
+                  <option value={0}>Grade 0: Reject Project (Direct Sync to LMS & Ask New Idea)</option>
                 </select>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
+                  {parseInt(grade) === 1 
+                    ? "✨ Approving will forward the proposal to the assigned Super Mentor for academic validation before syncing to LMS."
+                    : "⚠️ Rejecting will directly sync Grade 0 to LMS and enable resubmission for a new project idea."}
+                </p>
               </div>
 
+              {/* Individual Student Grading (Out of 10) */}
+              <div className="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-200 dark:border-gray-700 space-y-3">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-gray-900 dark:text-white">
+                      Individual Student Marks (Out of 10)
+                    </label>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400">
+                      Grade each team member individually based on contribution & viva.
+                    </p>
+                  </div>
+                  {/* Quick Fill Buttons */}
+                  <div className="flex items-center gap-1">
+                    <span className="text-[10px] text-gray-400 font-semibold mr-1">Quick:</span>
+                    {[10, 9, 8.5, 8].map(score => (
+                      <button
+                        key={score}
+                        type="button"
+                        onClick={() => {
+                          const updated = {};
+                          selectedTeamForGrade.members.forEach(m => { updated[m.studentId] = score; });
+                          setStudentMarks(updated);
+                        }}
+                        className="px-2 py-0.5 text-[10px] font-bold bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 border border-gray-200 dark:border-gray-600 rounded hover:bg-indigo-50"
+                      >
+                        {score}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2.5 pt-1">
+                  {selectedTeamForGrade.members.map((member) => {
+                    const isLeader = selectedTeamForGrade.leaderId === member.studentId;
+                    const curMark = studentMarks[member.studentId] !== undefined ? studentMarks[member.studentId] : 10;
+
+                    return (
+                      <div 
+                        key={member.id}
+                        className="flex items-center justify-between gap-3 p-2.5 bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-sm text-gray-900 dark:text-white truncate">
+                              {member.student?.user?.name}
+                            </span>
+                            {isLeader && (
+                              <span className="px-1.5 py-0.2 bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 text-[9px] font-black rounded">
+                                LEADER
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-gray-400">
+                            {member.student?.enrollmentNumber} &bull; Sec: {member.student?.section || 'N/A'}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="number"
+                            min="0"
+                            max="10"
+                            step="0.5"
+                            required
+                            value={curMark}
+                            onChange={(e) => {
+                              const val = parseFloat(e.target.value);
+                              setStudentMarks(prev => ({
+                                ...prev,
+                                [member.studentId]: isNaN(val) ? '' : Math.min(10, Math.max(0, val))
+                              }));
+                            }}
+                            className="w-16 px-2.5 py-1.5 text-center font-bold text-sm border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                          />
+                          <span className="text-xs font-semibold text-gray-500">/ 10</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Team Average Calculation Preview */}
+                {(() => {
+                  const values = Object.values(studentMarks).map(Number).filter(v => !isNaN(v));
+                  const avg = values.length > 0
+                    ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(2)
+                    : '10.00';
+                  return (
+                    <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center text-xs">
+                      <span className="font-semibold text-gray-600 dark:text-gray-300">Team Average Mentor Score:</span>
+                      <span className="font-black text-sm text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/50 px-2.5 py-0.5 rounded-full border border-indigo-100 dark:border-indigo-800">
+                        {avg} / 10
+                      </span>
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Mentor Remarks */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Remarks</label>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+                  Mentor Remarks / Feedback
+                </label>
                 <textarea 
                   rows="3"
                   required
                   value={remarks}
                   onChange={(e) => setRemarks(e.target.value)}
-                  placeholder="Provide feedback..."
-                  className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+                  placeholder={parseInt(grade) === 1 ? "e.g. Good progress on Phase objectives. Approved for Super Mentor review." : "e.g. Scope too generic. Please revise your methodology and idea."}
+                  className="w-full px-3.5 py-2.5 border rounded-xl dark:bg-gray-700 dark:border-gray-600 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 />
               </div>
 
-              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100 dark:border-gray-700">
-                <button type="button" onClick={() => setSelectedSubmission(null)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium">Cancel</button>
-                <button disabled={gradeLoading} type="submit" className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold shadow-sm">
-                  {gradeLoading ? 'Submitting...' : 'Submit Grade'}
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
+                <button 
+                  type="button" 
+                  onClick={() => { setSelectedSubmission(null); setSelectedTeamForGrade(null); }} 
+                  className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl font-medium text-sm"
+                >
+                  Cancel
+                </button>
+                <button 
+                  disabled={gradeLoading} 
+                  type="submit" 
+                  className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 font-bold shadow-md text-sm transition"
+                >
+                  {gradeLoading ? 'Submitting...' : 'Submit Grade & Marks'}
                 </button>
               </div>
             </form>

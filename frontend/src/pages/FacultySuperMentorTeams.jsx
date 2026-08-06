@@ -357,10 +357,33 @@ const FacultySuperMentorTeams = () => {
                       </div>
                     </div>
 
-                    {/* Regular Mentor info */}
-                    <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-100 dark:border-gray-700">
-                      <span><strong>Regular Mentor:</strong> {team.mentor?.user?.name || "Unassigned"}</span>
-                      <span><strong>Leader:</strong> {team.leader?.user?.name || "N/A"}</span>
+                    {/* Regular Mentor info & Grade status */}
+                    <div className="p-3 bg-gray-50 dark:bg-gray-900/40 rounded-xl border border-gray-100 dark:border-gray-700 text-xs space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span><strong>Assigned Mentor:</strong> {team.mentor?.user?.name || "Unassigned"}</span>
+                        <span><strong>Leader:</strong> {team.leader?.user?.name || "N/A"}</span>
+                      </div>
+                      {latestSub?.mentorGrades && latestSub.mentorGrades.length > 0 ? (
+                        <div className="flex items-center gap-2 pt-1 border-t border-gray-200 dark:border-gray-700">
+                          <span className="font-semibold text-gray-500">Mentor Evaluation:</span>
+                          <span className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                            latestSub.mentorGrades[0].grade === 1 
+                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300"
+                              : "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300"
+                          }`}>
+                            {latestSub.mentorGrades[0].grade === 1 ? "Grade 1 (Approved)" : "Grade 0 (Rejected)"}
+                          </span>
+                          {latestSub.mentorGrades[0].remarks && (
+                            <span className="text-gray-500 truncate italic">
+                              &ldquo;{latestSub.mentorGrades[0].remarks}&rdquo;
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-amber-600 dark:text-amber-400 font-medium text-[11px] pt-1 border-t border-gray-200 dark:border-gray-700 flex items-center gap-1">
+                          <Clock className="w-3 h-3" /> Mentor evaluation pending
+                        </div>
+                      )}
                     </div>
 
                     {/* Review Feedback history */}
@@ -370,7 +393,7 @@ const FacultySuperMentorTeams = () => {
                           ? "bg-rose-50 dark:bg-rose-950/30 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
                           : "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
                       }`}>
-                        <strong>Feedback Given:</strong> "{team.superMentorFeedback}"
+                        <strong>Super Mentor Feedback:</strong> "{team.superMentorFeedback}"
                       </div>
                     )}
                   </div>
@@ -387,7 +410,7 @@ const FacultySuperMentorTeams = () => {
                     }`}
                   >
                     <Check className="w-3.5 h-3.5" />
-                    {isApproved ? "Approved (Edit)" : "Approve Project"}
+                    {isApproved ? "Approved (Edit)" : "Approve & Sync LMS (1)"}
                   </button>
 
                   <button
@@ -399,7 +422,7 @@ const FacultySuperMentorTeams = () => {
                     }`}
                   >
                     <X className="w-3.5 h-3.5" />
-                    {isRejected ? "Rejected (Edit)" : "Request Changes"}
+                    {isRejected ? "Rejected (Edit)" : "Reject & Sync LMS (0)"}
                   </button>
                 </div>
               </div>
@@ -444,7 +467,7 @@ const FacultySuperMentorTeams = () => {
                         : "border-gray-200 dark:border-gray-700 text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
                     }`}
                   >
-                    <Check className="w-3.5 h-3.5" /> Approve Project
+                    <Check className="w-3.5 h-3.5" /> Approve (Syncs LMS 1)
                   </button>
                   <button
                     type="button"
@@ -455,9 +478,14 @@ const FacultySuperMentorTeams = () => {
                         : "border-gray-200 dark:border-gray-700 text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
                     }`}
                   >
-                    <X className="w-3.5 h-3.5" /> Request Changes
+                    <X className="w-3.5 h-3.5" /> Reject (Syncs LMS 0 & Requests New Idea)
                   </button>
                 </div>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-2">
+                  {reviewAction === "APPROVE" 
+                    ? "✨ Approving will automatically sync Grade 1 to Moodle / LMS for all team members under the mentor's evaluation."
+                    : "⚠️ Rejecting will automatically sync Grade 0 to Moodle / LMS and unlock new project proposal submission for the team."}
+                </p>
               </div>
 
               <div>

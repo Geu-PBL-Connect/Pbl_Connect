@@ -46,6 +46,7 @@ const {
   getSuperMentorReport,
   getEvaluationSchedule,
   updateEvaluationSchedule,
+  getFacultyGradingStats,
 } = require('../controllers/adminController');
 const { getInteractions } = require('../controllers/facultyController');
 const { protect, authorize } = require('../middlewares/auth');
@@ -84,6 +85,7 @@ router.get('/reports/marks/:pblId', getMarksForPbl);
 router.put('/reports/marks/update', adminUpdateMarks);
 router.get('/pbl', getPbls);
 router.get('/stats', getDashboardStats);
+router.get('/faculty-grading-stats', getFacultyGradingStats);
 router.get('/settings', getSettings);
 router.put('/settings', updateSettings);
 
