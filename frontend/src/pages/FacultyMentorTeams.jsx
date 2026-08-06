@@ -170,7 +170,7 @@ const FacultyMentorTeams = () => {
   if (loading) return <div className="p-8 text-center text-gray-500">Loading Mentored Teams...</div>;
 
   // Extract unique PBLs for the filter dropdown
-  const uniquePbls = [...new Map(teams.map(team => [team.pbl.id, team.pbl])).values()];
+  const uniquePbls = [...new Map(teams?.map(team => [team.pbl.id, team.pbl]) || []).values()];
 
   // Filter teams based on selected PBL and Search Query
   const filteredTeams = teams.filter(team => {
@@ -200,7 +200,7 @@ const FacultyMentorTeams = () => {
               className="px-3 py-1.5 border border-gray-200 dark:border-gray-600 rounded-lg text-xs bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-primary"
             >
               <option value="All">All PBLs</option>
-              {uniquePbls.map(pbl => (
+              {uniquePbls?.map(pbl => (
                 <option key={pbl.id} value={pbl.id}>
                   {pbl.subject} (Sem {pbl.semester})
                 </option>
@@ -244,7 +244,7 @@ const FacultyMentorTeams = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {filteredTeams.map((team) => {
+          {filteredTeams?.map((team) => {
             const isSuperMentorApproved = team.superMentorStatus === 'APPROVED';
             const isSuperMentorRejected = team.superMentorStatus === 'REJECTED';
             const isSuperMentorPending = team.superMentorStatus === 'PENDING';
@@ -328,7 +328,7 @@ const FacultyMentorTeams = () => {
                   {team.submissions.length === 0 ? (
                     <p className="text-sm text-gray-400 italic">No submissions yet.</p>
                   ) : (
-                    team.submissions.map(sub => {
+                    team.submissions?.map(sub => {
                       const phaseNum = team.pbl.phases?.find(p => p.id === sub.phaseId)?.phaseNumber || '1';
                       const isResubmitted = sub.status === 'PENDING' && sub.mentorGrades && sub.mentorGrades.length > 0;
                       const lastGrade = sub.mentorGrades?.[0];
@@ -408,7 +408,7 @@ const FacultyMentorTeams = () => {
                                   {/* Individual student marks preview pills */}
                                   {lastGrade.studentMarks && Object.keys(lastGrade.studentMarks).length > 0 && (
                                     <div className="pt-1 border-t border-current/10 flex flex-wrap gap-1.5">
-                                      {team.members.map(m => {
+                                      {team.members?.map(m => {
                                         const mark = lastGrade.studentMarks[m.studentId];
                                         if (mark === undefined || mark === null) return null;
                                         return (
@@ -564,14 +564,14 @@ const FacultyMentorTeams = () => {
                 ) : interactions.length === 0 ? (
                   <p className="text-center text-gray-500 py-4 italic">No interactions logged yet.</p>
                 ) : (
-                  interactions.map((interaction) => (
+                  interactions?.map((interaction) => (
                     <div key={interaction.id} className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-700 space-y-2">
                       <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
                         <span className="font-semibold">Logged by: {interaction.faculty?.user?.name}</span>
                         <span>{new Date(interaction.createdAt).toLocaleDateString()} at {new Date(interaction.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
                       <div className="space-y-1">
-                        {interaction.records.map((r) => (
+                        {interaction.studentRecords?.map((r) => (
                           <div key={r.id} className="flex justify-between items-center text-sm">
                             <span className="text-gray-700 dark:text-gray-300 font-medium">
                               {r.student?.user?.name} ({r.student?.enrollmentNumber})
@@ -599,7 +599,7 @@ const FacultyMentorTeams = () => {
               <form onSubmit={handleLogInteraction} className="space-y-4">
                 <p className="text-xs text-gray-500">Record attendance and remarks for each member during this interaction session.</p>
                 <div className="space-y-3">
-                  {interactionTeam.members.map((member) => (
+                  {interactionTeam.members?.map((member) => (
                     <div key={member.id} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-700 space-y-2">
                       <div className="flex justify-between items-center">
                         <span className="font-bold text-sm text-gray-800 dark:text-white">
@@ -686,7 +686,7 @@ const FacultyMentorTeams = () => {
               <div>
                 <h4 className="font-bold text-gray-800 dark:text-white mb-3">Team Members ({selectedTeamDetails.members.length})</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {selectedTeamDetails.members.map((member) => (
+                  {selectedTeamDetails.members?.map((member) => (
                     <div key={member.id} className="p-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800">
                       <p className="font-bold text-gray-800 dark:text-white">{member.student?.user?.name}</p>
                       <p className="text-sm text-gray-500">Roll No: {member.student?.enrollmentNumber}</p>
@@ -775,7 +775,7 @@ const FacultyMentorTeams = () => {
                 </div>
 
                 <div className="space-y-2.5 pt-1">
-                  {selectedTeamForGrade.members.map((member) => {
+                  {selectedTeamForGrade.members?.map((member) => {
                     const isLeader = selectedTeamForGrade.leaderId === member.studentId;
                     const curMark = studentMarks[member.studentId] !== undefined ? studentMarks[member.studentId] : 10;
 
