@@ -196,7 +196,7 @@ const AdminDashboard = () => {
           <div>
             <div className="flex items-center gap-2">
               <PieIcon className="w-6 h-6 text-yellow-400" />
-              <h3 className="text-xl font-bold tracking-tight">Faculty Grading Criteria & Distribution</h3>
+              <h3 className="text-xl font-bold tracking-tight">Faculty Stats</h3>
             </div>
             <p className="text-blue-200 text-xs mt-1">
               Individual mark distribution criteria and average scoring pattern per faculty member.
