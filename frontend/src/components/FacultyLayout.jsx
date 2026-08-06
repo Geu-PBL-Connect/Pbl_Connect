@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation, Navigate } from 'react-router-dom';
-import { Users, FileSignature, LogOut, ArrowLeft } from 'lucide-react';
+import { Users, FileSignature, ShieldCheck, LogOut, ArrowLeft } from 'lucide-react';
 import geuLogo from '../assets/Graphic-Era-University-GEU-Dehradun-Logo.jpg';
 
 const FacultyLayout = () => {
@@ -7,6 +7,7 @@ const FacultyLayout = () => {
   const navItems = [
     { name: 'Mentored Teams', path: '/faculty/mentor', icon: <Users size={20} /> },
     { name: 'Evaluated Teams', path: '/faculty/evaluator', icon: <FileSignature size={20} /> },
+    { name: 'Super Mentor Teams', path: '/faculty/super-mentor', icon: <ShieldCheck size={20} /> },
   ];
 
   const userInfoString = localStorage.getItem('userInfo');
