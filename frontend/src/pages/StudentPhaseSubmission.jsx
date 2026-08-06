@@ -304,17 +304,17 @@ const StudentPhaseSubmission = () => {
                         <AlertTriangle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
                         <div className="flex-1">
                           <h4 className="font-bold text-sm">
-                            Project Proposal Rejected &bull; Grade 0 Synced to LMS
+                            Phase Submission Needs Revision
                           </h4>
                           <p className="text-xs mt-1 leading-relaxed bg-white/70 dark:bg-gray-800/70 p-2.5 rounded-lg border border-red-100 dark:border-red-900">
-                            <strong>Reason:</strong> {team.superMentorFeedback || "Project scope was rejected. Please formulate a new project proposal and resubmit."}
+                            <strong>Feedback:</strong> {team.superMentorFeedback || "Project scope or details were not approved. Please revise and resubmit."}
                           </p>
                           {isLeader && !isResubmitting && (
                             <button
                               onClick={() => setIsResubmitting(true)}
                               className="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold shadow-sm transition flex items-center gap-1.5"
                             >
-                              <RefreshCw className="w-3.5 h-3.5" /> Submit New Project Idea & Synopsis
+                              <RefreshCw className="w-3.5 h-3.5" /> Submit Revised Idea/Files
                             </button>
                           )}
                         </div>
@@ -322,13 +322,10 @@ const StudentPhaseSubmission = () => {
                     </div>
                   )}
 
-                  {/* Mentor Grading & Individual Student Score Card */}
+                  {/* Mentor Grading & Status Card */}
                   {submission?.mentorGrades && submission.mentorGrades.length > 0 && (() => {
                     const mg = submission.mentorGrades[0];
-                    const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-                    const myMember = team?.members?.find(m => m.student?.userId === userInfo?.id || m.studentId === userInfo?.studentId);
-                    const myStudentId = myMember?.studentId || userInfo?.studentId;
-                    const myMark = mg.studentMarks && myStudentId ? mg.studentMarks[myStudentId] : undefined;
+                    const isApprovedByMentor = mg.grade > 0;
 
                     return (
                       <div className="p-4 bg-indigo-50/70 dark:bg-indigo-950/40 rounded-xl border border-indigo-200 dark:border-indigo-800 space-y-2.5">
@@ -339,23 +336,16 @@ const StudentPhaseSubmission = () => {
                               Mentor Phase Assessment
                             </span>
                           </div>
-                          {mg.averageMarks !== null && mg.averageMarks !== undefined && (
-                            <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-indigo-600 text-white">
-                              Team Average: {mg.averageMarks} / 10
+                          {isApprovedByMentor ? (
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300">
+                              Status: Approved
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300">
+                              Status: Changes Requested
                             </span>
                           )}
                         </div>
-
-                        {myMark !== undefined && (
-                          <div className="flex items-center justify-between p-2.5 bg-white dark:bg-gray-800 rounded-lg border border-indigo-100 dark:border-indigo-900">
-                            <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
-                              Your Individual Score for this Phase:
-                            </span>
-                            <span className="font-black text-sm text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/50 px-2.5 py-0.5 rounded-md">
-                              {myMark} / 10
-                            </span>
-                          </div>
-                        )}
 
                         {(mg.cleanRemarks || mg.remarks) && (
                           <div className="text-xs text-gray-600 dark:text-gray-400 bg-white/70 dark:bg-gray-800/70 p-2.5 rounded-lg border border-indigo-100 dark:border-indigo-900">
@@ -370,7 +360,7 @@ const StudentPhaseSubmission = () => {
                     <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 rounded-xl border border-emerald-200 dark:border-emerald-800 text-xs flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
                       <span>
-                        <strong>Quality Gate Passed & LMS Synced!</strong> Your project has been approved by your Mentor and validated by the Super Mentor with Grade 1.
+                        <strong>Quality Gate Passed & LMS Synced!</strong> Your project has been approved by your Mentor and validated by Academic Quality Review.
                       </span>
                     </div>
                   )}
@@ -379,7 +369,7 @@ const StudentPhaseSubmission = () => {
                     <div className="p-3 bg-purple-50 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 rounded-xl border border-purple-200 dark:border-purple-800 text-xs flex items-center gap-2">
                       <Clock className="w-4 h-4 text-purple-600 shrink-0" />
                       <span>
-                        <strong>Mentor Approved:</strong> Your Mentor approved your proposal with Grade 1. It is now awaiting final validation by your assigned Super Mentor before syncing to LMS.
+                        <strong>Awaiting Academic Quality Verification.</strong> Final approval is pending academic review.
                       </span>
                     </div>
                   )}

@@ -278,7 +278,6 @@ const getMyTeam = async (req, res, next) => {
           include: {
             pbl: { include: { phases: true } },
             mentor: { include: { user: true } },
-            superMentor: { include: { user: true } },
             phaseEvaluators: {
               include: { evaluator: { include: { user: true } }, phase: true },
             },
