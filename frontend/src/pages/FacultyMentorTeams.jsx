@@ -20,9 +20,11 @@ const FacultyMentorTeams = () => {
   const [studentMarks, setStudentMarks] = useState({});
   const [gradeLoading, setGradeLoading] = useState(false);
   
-  // Venue State
+  // Venue & Schedule State
   const [showVenueModal, setShowVenueModal] = useState(false);
   const [venue, setVenue] = useState('');
+  const [availableDate, setAvailableDate] = useState('');
+  const [availableTime, setAvailableTime] = useState('');
   const [venueLoading, setVenueLoading] = useState(false);
 
   // Team Details Modal State
@@ -106,6 +108,10 @@ const FacultyMentorTeams = () => {
         headers: { Authorization: `Bearer ${userInfo?.token}` }
       });
       setVenue(res.data.venue || '');
+      if (res.data.availableDate) {
+        setAvailableDate(new Date(res.data.availableDate).toISOString().split('T')[0]);
+      }
+      setAvailableTime(res.data.availableTime || '');
     } catch (err) {
       console.error(err);
     }
@@ -116,7 +122,11 @@ const FacultyMentorTeams = () => {
     try {
       setVenueLoading(true);
       const userInfo = JSON.parse(localStorage.getItem('userInfo'));
-      await axios.put('/api/faculty/venue', { venue }, {
+      const payload = { venue };
+      if (availableDate) payload.availableDate = new Date(availableDate).toISOString();
+      if (availableTime) payload.availableTime = availableTime;
+      
+      await axios.put('/api/faculty/venue', payload, {
         headers: { Authorization: `Bearer ${userInfo?.token}` }
       });
       alert('Venue updated successfully!');
@@ -464,30 +474,48 @@ const FacultyMentorTeams = () => {
             );
           })}
         </div>
-      )}
-
-      {/* Venue Modal */}
+      )}      {/* Venue & Schedule Modal */}
       {showVenueModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 fade-in">
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-2xl w-full max-w-md">
-            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Set Your Venue</h3>
-            <p className="text-sm text-gray-500 mb-4">This location will be visible to your assigned students.</p>
+            <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Set Your Availability Schedule</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">Let your students know where and when they can meet you.</p>
+            
             <form onSubmit={handleUpdateVenue}>
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Venue / Cabin / Location</label>
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Cabin / Venue Location</label>
                 <input 
                   type="text" 
-                  required
                   value={venue}
                   onChange={(e) => setVenue(e.target.value)}
-                  placeholder="e.g. Lab 4, Cabin 201..."
-                  className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="e.g. Lab 2, CS Block / Cabin 10"
+                  className="w-full px-4 py-2 border rounded-xl dark:bg-gray-700 dark:border-gray-600 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-700">
+              <div className="mb-4 grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Available Date</label>
+                  <input 
+                    type="date" 
+                    value={availableDate}
+                    onChange={(e) => setAvailableDate(e.target.value)}
+                    className="w-full px-4 py-2 border rounded-xl dark:bg-gray-700 dark:border-gray-600 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Time Slot</label>
+                  <input 
+                    type="time" 
+                    value={availableTime}
+                    onChange={(e) => setAvailableTime(e.target.value)}
+                    className="w-full px-4 py-2 border rounded-xl dark:bg-gray-700 dark:border-gray-600 dark:text-white outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
                 <button type="button" onClick={() => setShowVenueModal(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium">Cancel</button>
-                <button disabled={venueLoading} type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold shadow-sm">
-                  {venueLoading ? 'Saving...' : 'Save Venue'}
+                <button type="submit" disabled={venueLoading} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold shadow-sm disabled:opacity-50 flex items-center justify-center min-w-[120px]">
+                  {venueLoading ? 'Saving...' : 'Save Schedule'}
                 </button>
               </div>
             </form>

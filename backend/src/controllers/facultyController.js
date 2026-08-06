@@ -552,13 +552,13 @@ const getInteractions = async (req, res, next) => {
   }
 };
 
-// @desc    Update Faculty Venue
+// @desc    Update Faculty Venue and Schedule
 // @route   PUT /api/faculty/venue
 // @access  Private/Faculty
 const updateVenue = async (req, res, next) => {
   try {
     const facultyId = req.user.facultyProfileId;
-    const { venue } = req.body;
+    const { venue, availableDate, availableTime } = req.body;
     if (!facultyId) {
       res.status(403);
       throw new Error("Not registered as a faculty member.");
@@ -566,16 +566,16 @@ const updateVenue = async (req, res, next) => {
 
     const updated = await prisma.faculty.update({
       where: { id: facultyId },
-      data: { venue },
+      data: { venue, availableDate, availableTime },
     });
 
-    res.json({ message: "Venue updated successfully", venue: updated.venue });
+    res.json({ message: "Schedule updated successfully", venue: updated.venue, availableDate: updated.availableDate, availableTime: updated.availableTime });
   } catch (error) {
     next(error);
   }
 };
 
-// @desc    Get Faculty Venue
+// @desc    Get Faculty Venue and Schedule
 // @route   GET /api/faculty/venue
 // @access  Private/Faculty
 const getVenue = async (req, res, next) => {
@@ -588,10 +588,10 @@ const getVenue = async (req, res, next) => {
 
     const faculty = await prisma.faculty.findUnique({
       where: { id: facultyId },
-      select: { venue: true },
+      select: { venue: true, availableDate: true, availableTime: true },
     });
 
-    res.json({ venue: faculty?.venue || "" });
+    res.json({ venue: faculty?.venue || "", availableDate: faculty?.availableDate || null, availableTime: faculty?.availableTime || "" });
   } catch (error) {
     next(error);
   }

@@ -28,6 +28,8 @@ model Faculty {
   department              String?
   moodleId                String?                  @unique
   venue                   String?
+  availableDate           DateTime?
+  availableTime           String?
   evaluations             Evaluation[]
   user                    User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   interactions            Interaction[]

@@ -204,20 +204,44 @@ const StudentDashboard = () => {
           <div className="flex justify-between items-start mb-6">
             <div>
               <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-1">Team ID: <span className="text-blue-600">{viewingTeam.teamIdFormatted}</span></h3>
-              <p className="text-gray-500">
+              <div className="text-gray-500 mb-4">
                 Mentor: {viewingTeam.mentor?.user?.name ? (
                   <span className="font-semibold text-gray-700 dark:text-gray-300">
                     {viewingTeam.mentor.user.name} 
                     {viewingTeam.mentor.venue && (
                       <span className="ml-2 text-xs bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 px-2 py-0.5 rounded-full font-bold inline-flex items-center gap-1">
                         <MapPin className="w-3 h-3" /> {viewingTeam.mentor.venue}
+                        {viewingTeam.mentor.availableDate && ` | ${new Date(viewingTeam.mentor.availableDate).toLocaleDateString()}`}
+                        {viewingTeam.mentor.availableTime && ` at ${viewingTeam.mentor.availableTime}`}
                       </span>
                     )}
                   </span>
                 ) : (
                   <span className="italic">Not assigned yet</span>
                 )}
-              </p>
+              </div>
+              
+              {viewingTeam.phaseEvaluators && viewingTeam.phaseEvaluators.length > 0 && (
+                <div className="mt-2 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Phase Evaluators</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {viewingTeam.phaseEvaluators.map((pe, idx) => (
+                      <div key={idx} className="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-600 px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-sm">
+                        <span className="font-bold text-blue-600 dark:text-blue-400">Phase {pe.phase.phaseNumber}:</span>
+                        <span className="text-gray-700 dark:text-gray-300">{pe.evaluator.user.name}</span>
+                        {(pe.evaluationVenue || pe.evaluationDate || pe.evaluationTime || pe.evaluator.venue) && (
+                          <span className="text-[10px] bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 px-2 py-0.5 rounded-full flex items-center gap-1 font-semibold ml-1">
+                            <MapPin className="w-3 h-3" /> 
+                            {pe.evaluationVenue || pe.evaluator.venue || 'No Venue'}
+                            {(pe.evaluationDate || pe.evaluator.availableDate) && ` | ${new Date(pe.evaluationDate || pe.evaluator.availableDate).toLocaleDateString()}`}
+                            {(pe.evaluationTime || pe.evaluator.availableTime) && ` at ${pe.evaluationTime || pe.evaluator.availableTime}`}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
