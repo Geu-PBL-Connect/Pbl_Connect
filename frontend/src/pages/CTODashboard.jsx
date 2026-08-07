@@ -99,65 +99,57 @@ const CTODashboard = () => {
               title="Total Students" 
               value={metrics?.students?.total} 
               subtitle="Registered students"
-              icon={<Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />} 
-              gradient="from-blue-500/10 to-cyan-500/10"
-              borderColor="border-blue-200 dark:border-blue-900/50"
+              icon={<Users size={24} />} 
+              color="bg-blue-50 text-blue-600 border border-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800"
             />
             <MetricCard 
               title="Students With Team" 
               value={metrics?.students?.withTeams} 
               subtitle="Formed teams"
-              icon={<UserCheck className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />} 
-              gradient="from-emerald-500/10 to-teal-500/10"
-              borderColor="border-emerald-200 dark:border-emerald-900/50"
+              icon={<UserCheck size={24} />} 
+              color="bg-green-50 text-green-600 border border-green-100 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800"
             />
             <MetricCard 
               title="Students Without Team" 
               value={metrics?.students?.withoutTeams} 
               subtitle="Pending formation"
-              icon={<UserX className="w-6 h-6 text-orange-600 dark:text-orange-400" />} 
-              gradient="from-orange-500/10 to-amber-500/10"
-              borderColor="border-orange-200 dark:border-orange-900/50"
+              icon={<UserX size={24} />} 
+              color="bg-orange-50 text-orange-600 border border-orange-100 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800"
             />
             <MetricCard 
               title="Total Teams" 
               value={metrics?.projects?.total} 
               subtitle="Registered groups"
-              icon={<UsersRound className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />} 
-              gradient="from-indigo-500/10 to-blue-500/10"
-              borderColor="border-indigo-200 dark:border-indigo-900/50"
+              icon={<UsersRound size={24} />} 
+              color="bg-indigo-50 text-indigo-600 border border-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 dark:border-indigo-800"
             />
             <MetricCard 
               title="Teams Without Mentor" 
               value={metrics?.projects?.withoutMentor} 
               subtitle="Unassigned teams"
-              icon={<Users className="w-6 h-6 text-rose-600 dark:text-rose-400" />} 
-              gradient="from-rose-500/10 to-red-500/10"
-              borderColor="border-rose-200 dark:border-rose-900/50"
+              icon={<Users size={24} />} 
+              color="bg-rose-50 text-rose-600 border border-rose-100 dark:bg-rose-900/30 dark:text-rose-400 dark:border-rose-800"
             />
             <MetricCard 
               title="Total Mentors" 
               value={metrics?.mentors?.total} 
               subtitle="Faculty members"
-              icon={<User className="w-6 h-6 text-purple-600 dark:text-purple-400" />} 
-              gradient="from-purple-500/10 to-pink-500/10"
-              borderColor="border-purple-200 dark:border-purple-900/50"
+              icon={<User size={24} />} 
+              color="bg-purple-50 text-purple-600 border border-purple-100 dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800"
             />
             <MetricCard 
               title="Active PBLs" 
               value={metrics?.pbls?.active} 
               subtitle="Ongoing batches"
-              icon={<BookOpen className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />} 
-              gradient="from-cyan-500/10 to-blue-500/10"
-              borderColor="border-cyan-200 dark:border-cyan-900/50"
+              icon={<BookOpen size={24} />} 
+              color="bg-cyan-50 text-cyan-600 border border-cyan-100 dark:bg-cyan-900/30 dark:text-cyan-400 dark:border-cyan-800"
             />
             <MetricCard 
               title="Avg Eval Score" 
               value={`${metrics?.evaluationStats?.averageScore}%`} 
               subtitle="Overall performance"
-              icon={<Award className="w-6 h-6 text-amber-600 dark:text-amber-400" />} 
-              gradient="from-amber-500/10 to-orange-500/10"
-              borderColor="border-amber-200 dark:border-amber-900/50"
+              icon={<Award size={24} />} 
+              color="bg-amber-50 text-amber-600 border border-amber-100 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800"
             />
           </div>
 
@@ -386,17 +378,16 @@ const CTODashboard = () => {
   );
 };
 
-const MetricCard = ({ title, value, subtitle, icon, gradient, borderColor }) => (
-  <div className={`bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border ${borderColor} relative overflow-hidden group`}>
-    <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${gradient} rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-110`}></div>
-    <div className="relative z-10 flex flex-col h-full justify-between">
-      <div className="flex justify-between items-start mb-4">
-        <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400">{title}</h3>
-        <div className="p-2 bg-gray-50 dark:bg-gray-900/50 rounded-xl">{icon}</div>
-      </div>
+const MetricCard = ({ title, value, subtitle, icon, color }) => (
+  <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+    <div className="flex items-center justify-between">
       <div>
-        <div className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">{value !== undefined ? value : '-'}</div>
-        <div className="text-xs text-gray-400 dark:text-gray-500 mt-2 font-medium">{subtitle}</div>
+        <p className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">{title}</p>
+        <p className="text-3xl font-black text-gray-800 dark:text-white mt-2 tracking-tight">{value !== undefined ? value : '-'}</p>
+        {subtitle && <p className="text-xs font-medium text-gray-400 dark:text-gray-500 mt-2">{subtitle}</p>}
+      </div>
+      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner ${color}`}>
+        {icon}
       </div>
     </div>
   </div>
