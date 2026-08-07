@@ -119,7 +119,7 @@ const CTODashboard = () => {
               <option value="">All PBLs (University Level)</option>
               {pblList.map(pbl => (
                 <option key={pbl.id} value={pbl.id}>
-                  {pbl.title} ({pbl.semester} Sem - {pbl.academicYear})
+                  {pbl.subject} ({pbl.semester} Sem - {pbl.session})
                 </option>
               ))}
             </select>
