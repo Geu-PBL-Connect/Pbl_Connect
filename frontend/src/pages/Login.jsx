@@ -29,6 +29,7 @@ const Login = () => {
         case 'FACULTY': navigate('/faculty/dashboard'); break;
         case 'ADMIN': navigate('/admin/dashboard'); break;
         case 'SUPER_ADMIN': navigate('/super-admin/dashboard'); break;
+        case 'CTO': navigate('/cto/dashboard'); break;
         default: navigate('/');
       }
     } catch (err) {
