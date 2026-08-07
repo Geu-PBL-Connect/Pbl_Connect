@@ -1,7 +1,6 @@
-const { PrismaClient } = require('@prisma/client');
-const bcrypt = require('bcryptjs');
-
-const prisma = new PrismaClient();
+require('dotenv').config();
+const prisma = require('./src/config/db');
+const bcrypt = require('bcrypt');
 
 async function updateCto() {
   const newEmail = "ChiefTech";
