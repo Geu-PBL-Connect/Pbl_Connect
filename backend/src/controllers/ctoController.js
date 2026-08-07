@@ -5,32 +5,55 @@ const prisma = require('../config/db');
 // @access  Private/CTO
 const getDashboardMetrics = async (req, res, next) => {
   try {
-    // Basic counts
-    const totalStudents = await prisma.student.count();
-    const totalTeams = await prisma.team.count();
+    const { pblId } = req.query;
+
+    let totalStudents = 0;
+    let totalTeams = 0;
+    let studentsWithTeams = 0;
+    let activePbls = 0;
+    let teamsWithoutMentor = 0;
+    let allEvaluations = [];
+    let teams = [];
+
     const totalMentors = await prisma.faculty.count();
-
-    const studentsWithTeams = await prisma.teamMember.count({
-      where: { status: 'APPROVED' }
-    });
-    
-    const activePbls = await prisma.pbl.count({
-      where: { status: 'ACTIVE' }
+    activePbls = await prisma.pbl.count({
+      where: { isArchived: false }
     });
 
-    const teamsWithoutMentor = await prisma.team.count({
-      where: { mentorId: null }
-    });
-
-    const teams = await prisma.team.findMany({
-      include: {
-        submissions: {
-          include: { mentorGrades: true }
-        }
+    if (pblId) {
+      const pbl = await prisma.pbl.findUnique({ where: { id: pblId } });
+      if (pbl) {
+        totalStudents = await prisma.student.count({ where: { semester: pbl.semester } });
       }
-    });
+      
+      totalTeams = await prisma.team.count({ where: { pblId } });
+      
+      studentsWithTeams = await prisma.teamMember.count({
+        where: { status: 'APPROVED', team: { pblId } }
+      });
+      
+      teamsWithoutMentor = await prisma.team.count({
+        where: { mentorId: null, pblId }
+      });
 
-    const allEvaluations = await prisma.evaluation.findMany();
+      teams = await prisma.team.findMany({
+        where: { pblId },
+        include: { submissions: { include: { mentorGrades: true } } }
+      });
+
+      allEvaluations = await prisma.evaluation.findMany({
+        where: { phase: { pblId } }
+      });
+    } else {
+      totalStudents = await prisma.student.count();
+      totalTeams = await prisma.team.count();
+      studentsWithTeams = await prisma.teamMember.count({ where: { status: 'APPROVED' } });
+      teamsWithoutMentor = await prisma.team.count({ where: { mentorId: null } });
+      teams = await prisma.team.findMany({
+        include: { submissions: { include: { mentorGrades: true } } }
+      });
+      allEvaluations = await prisma.evaluation.findMany();
+    }
 
     let mentorApprovedCount = 0;
     let mentorRejectedCount = 0;
@@ -101,7 +124,12 @@ const getDashboardMetrics = async (req, res, next) => {
 // @access  Private/CTO
 const getProjectsList = async (req, res, next) => {
   try {
+    const { pblId } = req.query;
+    
+    const whereClause = pblId ? { pblId } : {};
+
     const teams = await prisma.team.findMany({
+      where: whereClause,
       include: {
         leader: { include: { user: { select: { name: true, email: true } } } },
         mentor: { include: { user: { select: { name: true, email: true } } } },
@@ -116,7 +144,9 @@ const getProjectsList = async (req, res, next) => {
     });
 
     // Fetch all evaluations and group by student to attach to team
+    const evaluationWhere = pblId ? { phase: { pblId } } : {};
     const allEvaluations = await prisma.evaluation.findMany({
+      where: evaluationWhere,
       include: { phase: true, evaluator: { include: { user: { select: { name: true } } } } }
     });
 
@@ -198,8 +228,24 @@ const getStudentProfile = async (req, res, next) => {
   }
 };
 
+// @desc    Get All PBLs for dropdown
+// @route   GET /api/cto/pbl
+// @access  Private/CTO
+const getPbls = async (req, res, next) => {
+  try {
+    const pbls = await prisma.pbl.findMany({
+      where: { isArchived: false },
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json(pbls);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getDashboardMetrics,
   getStudentProfile,
-  getProjectsList
+  getProjectsList,
+  getPbls
 };

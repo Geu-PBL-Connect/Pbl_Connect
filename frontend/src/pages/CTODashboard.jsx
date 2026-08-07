@@ -3,7 +3,8 @@ import axios from 'axios';
 import { 
   Users, Briefcase, CheckCircle, XCircle, Award, 
   BarChart3, PieChart, Activity, Search, FolderKanban, 
-  ChevronRight, ArrowUpRight, UserCheck, UserX, UsersRound, BookOpen, User
+  ChevronRight, ArrowUpRight, UserCheck, UserX, UsersRound, BookOpen, User,
+  Sparkles, Filter
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -20,9 +21,28 @@ const CTODashboard = () => {
   const [searchProject, setSearchProject] = useState('');
   const [selectedProject, setSelectedProject] = useState(null);
 
+  const [selectedPbl, setSelectedPbl] = useState('');
+  const [pblList, setPblList] = useState([]);
+
+  useEffect(() => {
+    fetchPbls();
+  }, []);
+
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+  }, [selectedPbl]);
+
+  const fetchPbls = async () => {
+    try {
+      const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+      const res = await axios.get('/api/cto/pbl', {
+        headers: { Authorization: `Bearer ${userInfo.token}` }
+      });
+      setPblList(res.data);
+    } catch (err) {
+      console.error('Failed to fetch PBLs', err);
+    }
+  };
 
   const fetchDashboardData = async () => {
     setLoading(true);
@@ -30,9 +50,17 @@ const CTODashboard = () => {
       const userInfo = JSON.parse(localStorage.getItem('userInfo'));
       const config = { headers: { Authorization: `Bearer ${userInfo?.token}` } };
       
+      let metricsUrl = '/api/cto/dashboard-metrics';
+      let projectsUrl = '/api/cto/projects';
+      
+      if (selectedPbl) {
+        metricsUrl += `?pblId=${selectedPbl}`;
+        projectsUrl += `?pblId=${selectedPbl}`;
+      }
+
       const [metricsRes, projectsRes] = await Promise.all([
-        axios.get('/api/cto/dashboard-metrics', config),
-        axios.get('/api/cto/projects', config)
+        axios.get(metricsUrl, config),
+        axios.get(projectsUrl, config)
       ]);
       
       setMetrics(metricsRes.data);
@@ -66,28 +94,53 @@ const CTODashboard = () => {
 
   return (
     <div className="p-6 md:p-8 max-w-[1600px] mx-auto min-h-screen bg-gray-50 dark:bg-gray-900 font-sans">
-      <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end">
+      <header className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">CTO Command Center</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-2">University Project Based Learning Strategic Overview</p>
+          <div className="flex items-center gap-3 mb-2">
+            <h1 className="text-3xl font-black text-gray-800 dark:text-white tracking-tight">System Overview</h1>
+            <span className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-400 text-xs font-bold uppercase tracking-wider rounded-full border border-indigo-200 dark:border-indigo-800">CTO</span>
+          </div>
+          <p className="text-gray-500 dark:text-gray-400 font-medium flex items-center gap-2">
+            <Sparkles size={16} className="text-yellow-500" />
+            Platform statistics and PBL tracking
+          </p>
         </div>
         
-        {/* Tabs Navigation */}
-        <div className="mt-6 md:mt-0 flex bg-gray-200/50 dark:bg-gray-800/50 p-1 rounded-xl border border-gray-200 dark:border-gray-700">
-          <button 
-            onClick={() => setActiveTab('overview')}
-            className={`flex items-center px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'overview' ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
-          >
-            <PieChart className="w-4 h-4 mr-2" />
-            Overview
-          </button>
-          <button 
-            onClick={() => setActiveTab('projects')}
-            className={`flex items-center px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'projects' ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
-          >
-            <FolderKanban className="w-4 h-4 mr-2" />
-            Project Explorer
-          </button>
+        {/* PBL Filter and Tabs Navigation */}
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          {/* PBL Filter Dropdown */}
+          <div className="flex items-center gap-2 bg-white dark:bg-gray-800 p-2 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <Filter size={18} className="text-indigo-500 ml-2" />
+            <select 
+              value={selectedPbl}
+              onChange={(e) => setSelectedPbl(e.target.value)}
+              className="bg-transparent text-gray-700 dark:text-gray-200 font-semibold text-sm border-none focus:ring-0 cursor-pointer pr-8 focus:outline-none"
+            >
+              <option value="">All PBLs (University Level)</option>
+              {pblList.map(pbl => (
+                <option key={pbl.id} value={pbl.id}>
+                  {pbl.title} ({pbl.semester} Sem - {pbl.academicYear})
+                </option>
+              ))}
+            </select>
+          </div>
+          
+          <div className="flex bg-gray-200/50 dark:bg-gray-800/50 p-1 rounded-xl border border-gray-200 dark:border-gray-700">
+            <button 
+              onClick={() => setActiveTab('overview')}
+              className={`flex items-center px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'overview' ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+            >
+              <PieChart className="w-4 h-4 mr-2" />
+              Overview
+            </button>
+            <button 
+              onClick={() => setActiveTab('projects')}
+              className={`flex items-center px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${activeTab === 'projects' ? 'bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+            >
+              <FolderKanban className="w-4 h-4 mr-2" />
+              Projects
+            </button>
+          </div>
         </div>
       </header>
 

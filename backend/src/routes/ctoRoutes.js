@@ -13,6 +13,9 @@ router.get('/dashboard-metrics', ctoController.getDashboardMetrics);
 // CTO Projects List
 router.get('/projects', ctoController.getProjectsList);
 
+// CTO PBL List
+router.get('/pbl', ctoController.getPbls);
+
 // Student 360 Profile
 router.get('/student-profile/:rollNo', ctoController.getStudentProfile);
 
