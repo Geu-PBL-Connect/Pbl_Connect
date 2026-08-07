@@ -857,6 +857,76 @@ const checkSuperMentorRole = async (req, res, next) => {
   }
 };
 
+const getTimelineWarnings = async (req, res, next) => {
+  try {
+    const facultyId = req.user.facultyProfileId;
+    const now = new Date();
+    // 4 days from now
+    const fourDaysFromNow = new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000);
+
+    // Get active timelines ending soon (within 4 days) and not locked
+    const timelines = await prisma.evaluationTimeline.findMany({
+      where: {
+        isLocked: false,
+        endDate: {
+          gte: now,
+          lte: fourDaysFromNow,
+        },
+      },
+      include: {
+        phase: {
+          include: { pbl: true }
+        }
+      }
+    });
+
+    if (timelines.length === 0) {
+      return res.json({ warnings: [] });
+    }
+
+    const phaseIds = timelines.map(t => t.phaseId);
+
+    // Find if the faculty has pending evaluations for these phases
+    const pendingEvaluations = await prisma.teamPhaseEvaluator.findMany({
+      where: {
+        evaluatorId: facultyId,
+        phaseId: { in: phaseIds },
+        status: { in: ['PENDING', 'ASSIGNED'] } // 'ASSIGNED' is sometimes used instead of 'PENDING' based on other controllers. Actually, let's use 'PENDING' or status not equals 'EVALUATED'
+      },
+      include: {
+        team: { select: { teamIdFormatted: true } }
+      }
+    });
+
+    // We only care about those that are NOT 'EVALUATED'
+    const actuallyPending = pendingEvaluations.filter(pe => pe.status !== 'EVALUATED');
+
+    if (actuallyPending.length === 0) {
+      return res.json({ warnings: [] });
+    }
+
+    // Group pending evaluations by phase
+    const warnings = timelines.map(t => {
+      const pendingForPhase = actuallyPending.filter(pe => pe.phaseId === t.phaseId);
+      if (pendingForPhase.length > 0) {
+        return {
+          phaseId: t.phaseId,
+          phaseNumber: t.phase.phaseNumber,
+          pblSubject: t.phase.pbl.subject,
+          endDate: t.endDate,
+          pendingTeamsCount: pendingForPhase.length,
+          pendingTeams: pendingForPhase.map(p => p.team.teamIdFormatted)
+        };
+      }
+      return null;
+    }).filter(w => w !== null);
+
+    res.json({ warnings });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getMentoredTeams,
   getEvaluatedTeams,
