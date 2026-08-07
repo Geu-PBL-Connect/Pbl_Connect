@@ -93,7 +93,7 @@ const CTODashboard = () => {
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-[1600px] mx-auto min-h-screen bg-gray-50 dark:bg-gray-900 font-sans">
+    <div className="max-w-[1600px] mx-auto space-y-6 pb-12">
       <header className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
         <div>
           <div className="flex items-center gap-3 mb-2">

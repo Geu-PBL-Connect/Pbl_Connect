@@ -133,7 +133,7 @@ const getProjectsList = async (req, res, next) => {
       include: {
         leader: { include: { user: { select: { name: true, email: true } } } },
         mentor: { include: { user: { select: { name: true, email: true } } } },
-        teamMembers: {
+        members: {
           include: { student: { include: { user: { select: { name: true, email: true } } } } }
         },
         submissions: {
