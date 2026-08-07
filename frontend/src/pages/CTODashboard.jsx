@@ -4,7 +4,7 @@ import {
   Users, Briefcase, CheckCircle, XCircle, Award, 
   BarChart3, PieChart, Activity, Search, FolderKanban, 
   ChevronRight, ArrowUpRight, UserCheck, UserX, UsersRound, BookOpen, User,
-  Sparkles, Filter
+  Sparkles, Filter, FileText
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -350,61 +350,164 @@ const CTODashboard = () => {
               <div className="flex-1 bg-gray-50 dark:bg-gray-900/50 overflow-auto relative animate-fade-in-right">
                 <button 
                   onClick={() => setSelectedProject(null)}
-                  className="lg:hidden absolute top-4 right-4 p-2 bg-white dark:bg-gray-800 rounded-full shadow-sm text-gray-500"
+                  className="lg:hidden absolute top-4 right-4 p-2 bg-white dark:bg-gray-800 rounded-full shadow-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   <XCircle className="w-5 h-5" />
                 </button>
                 
-                <div className="p-8">
-                  <div className="mb-6">
-                    <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 tracking-wider uppercase bg-indigo-100 dark:bg-indigo-900/30 px-3 py-1 rounded-full">{selectedProject.teamIdFormatted}</span>
-                    <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white mt-4 leading-tight">{selectedProject.projectTitle || 'Untitled Project'}</h2>
-                    <p className="text-gray-500 dark:text-gray-400 mt-2 flex items-center">
-                      <Users className="w-4 h-4 mr-2" /> Led by {selectedProject.leader?.user?.name}
-                    </p>
+                <div className="p-4 sm:p-6 lg:p-8">
+                  <div className="mb-6 bg-white dark:bg-gray-800 p-6 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                    <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 tracking-wider uppercase bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1.5 rounded-full border border-indigo-100 dark:border-indigo-800">
+                      {selectedProject.teamIdFormatted}
+                    </span>
+                    <h2 className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white mt-4 leading-tight">
+                      {selectedProject.projectTitle || 'Untitled Project'}
+                    </h2>
+                    
+                    <div className="mt-4 flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
+                      <div className="flex items-center">
+                        <User className="w-4 h-4 mr-1.5 text-gray-400" />
+                        <span className="font-medium text-gray-700 dark:text-gray-300 mr-1">Leader:</span> {selectedProject.leader?.user?.name}
+                      </div>
+                      <div className="flex items-center">
+                        <Users className="w-4 h-4 mr-1.5 text-gray-400" />
+                        <span className="font-medium text-gray-700 dark:text-gray-300 mr-1">Team Size:</span> {(selectedProject.members?.length || 0) + 1}
+                      </div>
+                      <div className="flex items-center">
+                        <Briefcase className="w-4 h-4 mr-1.5 text-gray-400" />
+                        <span className="font-medium text-gray-700 dark:text-gray-300 mr-1">Mentor:</span> {selectedProject.mentor?.user?.name || 'Unassigned'}
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 mb-8">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                     <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Mentor</div>
-                      <div className="font-bold text-gray-900 dark:text-white">{selectedProject.mentor?.user?.name || 'Unassigned'}</div>
-                    </div>
-                    <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
-                      <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Status</div>
-                      <div className={`font-bold ${
-                            selectedProject.superMentorStatus === 'APPROVED' ? 'text-emerald-600' :
-                            selectedProject.superMentorStatus === 'REJECTED' ? 'text-rose-600' :
-                            'text-amber-600'
+                      <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Approval Status</div>
+                      <div className={`font-black text-lg ${
+                            selectedProject.superMentorStatus === 'APPROVED' ? 'text-emerald-600 dark:text-emerald-400' :
+                            selectedProject.superMentorStatus === 'REJECTED' ? 'text-rose-600 dark:text-rose-400' :
+                            'text-amber-500 dark:text-amber-400'
                           }`}>{selectedProject.superMentorStatus}</div>
+                    </div>
+                    
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                      <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Rejections</div>
+                      <div className="font-black text-lg text-rose-600 dark:text-rose-400">
+                        {selectedProject.submissions?.filter(s => s.status === 'REJECTED').length || 0}
+                      </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                      <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Phases Done</div>
+                      <div className="font-black text-lg text-blue-600 dark:text-blue-400">
+                        {selectedProject.submissions?.filter(s => s.status === 'APPROVED').length || 0}
+                      </div>
+                    </div>
+                    
+                    <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                      <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">Avg Score</div>
+                      <div className="font-black text-lg text-indigo-600 dark:text-indigo-400">
+                        {selectedProject.evaluations?.length > 0 ? 
+                          (selectedProject.evaluations.reduce((sum, ev) => sum + (ev.marksObtained/ev.totalMarks*100), 0) / selectedProject.evaluations.length).toFixed(1) + '%' 
+                          : 'N/A'}
+                      </div>
                     </div>
                   </div>
 
                   {selectedProject.projectDescription && (
-                    <div className="mb-8">
-                      <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3">Project Abstract</h3>
-                      <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                    <div className="mb-8 bg-white dark:bg-gray-800 p-6 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                      <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider mb-3">Project Abstract</h3>
+                      <div className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
                         {selectedProject.projectDescription}
                       </div>
                     </div>
                   )}
 
                   <div className="mb-8">
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center">
-                      <CheckCircle className="w-5 h-5 mr-2 text-indigo-500" />
-                      Evaluations & Phases
+                    <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4 px-2 flex items-center">
+                      <BookOpen className="w-4 h-4 mr-2" /> Phase-wise Reports & Feedback
                     </h3>
                     
-                    {selectedProject.evaluations?.length > 0 || selectedProject.submissions?.length > 0 ? (
+                    {selectedProject.submissions?.length > 0 ? (
+                      <div className="space-y-4">
+                        {selectedProject.submissions.map(sub => (
+                          <div key={sub.id} className="bg-white dark:bg-gray-800 p-5 sm:p-6 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm relative overflow-hidden">
+                            <div className={`absolute top-0 left-0 w-1 h-full ${
+                              sub.status === 'APPROVED' ? 'bg-emerald-500' :
+                              sub.status === 'REJECTED' ? 'bg-rose-500' : 'bg-amber-500'
+                            }`}></div>
+                            
+                            <div className="flex flex-col sm:flex-row justify-between items-start gap-4 mb-4">
+                              <div>
+                                <h4 className="font-black text-lg text-gray-900 dark:text-white">
+                                  Phase {sub.phase?.phaseNumber}: {sub.phase?.title}
+                                </h4>
+                                <div className="text-xs font-medium text-gray-500 mt-1">Submitted: {new Date(sub.submittedAt).toLocaleDateString()}</div>
+                              </div>
+                              <span className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                                sub.status === 'APPROVED' ? 'bg-emerald-50 border-emerald-200 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-800/50 dark:text-emerald-400' :
+                                sub.status === 'REJECTED' ? 'bg-rose-50 border-rose-200 text-rose-700 dark:bg-rose-900/20 dark:border-rose-800/50 dark:text-rose-400' :
+                                'bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:border-amber-800/50 dark:text-amber-400'
+                              }`}>
+                                {sub.status}
+                              </span>
+                            </div>
+                            
+                            {(sub.synopsisUrl || sub.fileUrls) && (
+                              <div className="mb-4 flex flex-wrap gap-3">
+                                {sub.synopsisUrl ? (
+                                  <a href={sub.synopsisUrl} target="_blank" rel="noreferrer" className="inline-flex items-center px-4 py-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-sm font-bold rounded-xl transition-colors">
+                                    <FileText className="w-4 h-4 mr-2"/> View Synopsis
+                                  </a>
+                                ) : (
+                                  <a href={sub.fileUrls?.[0]} target="_blank" rel="noreferrer" className="inline-flex items-center px-4 py-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-sm font-bold rounded-xl transition-colors">
+                                    <FileText className="w-4 h-4 mr-2"/> View Submission Document
+                                  </a>
+                                )}
+                              </div>
+                            )}
+
+                            {sub.mentorGrades?.length > 0 && (
+                              <div className="mt-4 bg-gray-50 dark:bg-gray-900/50 rounded-2xl p-4 border border-gray-100 dark:border-gray-800">
+                                <h5 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Mentor Review</h5>
+                                {sub.mentorGrades.map(mg => (
+                                  <div key={mg.id} className="mb-3 last:mb-0">
+                                    <div className="flex items-center justify-between mb-1">
+                                      <span className="text-sm font-bold text-gray-800 dark:text-gray-200">Grade: {mg.grade}/10</span>
+                                    </div>
+                                    {mg.remarks && <p className="text-sm text-gray-600 dark:text-gray-400 italic">"{mg.remarks}"</p>}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl border border-gray-100 dark:border-gray-700 text-center shadow-sm">
+                        <FolderKanban className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                        <div className="text-gray-500 font-medium">No reports submitted yet</div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mb-8">
+                    <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4 px-2 flex items-center">
+                      <Award className="w-4 h-4 mr-2" /> Faculty Evaluations
+                    </h3>
+                    
+                    {selectedProject.evaluations?.length > 0 ? (
                       <div className="space-y-4">
                         {selectedProject.evaluations?.map(ev => (
-                          <div key={ev.id} className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div key={ev.id} className="bg-white dark:bg-gray-800 p-5 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                             <div>
                               <div className="font-bold text-gray-900 dark:text-white">Phase {ev.phase?.phaseNumber} Evaluation</div>
-                              <div className="text-sm text-gray-500 mt-1">By: {ev.evaluator?.user?.name}</div>
-                              {ev.remarks && <div className="text-sm italic text-gray-600 dark:text-gray-400 mt-2">"{ev.remarks}"</div>}
+                              <div className="text-sm font-medium text-gray-500 mt-1">Evaluator: {ev.evaluator?.user?.name}</div>
+                              {ev.remarks && <div className="text-sm text-gray-600 dark:text-gray-400 mt-2 italic bg-gray-50 dark:bg-gray-900/50 p-3 rounded-xl border border-gray-100 dark:border-gray-700">"{ev.remarks}"</div>}
                             </div>
-                            <div className="text-right">
-                              <div className="text-2xl font-extrabold text-indigo-600 dark:text-indigo-400">
+                            <div className="sm:text-right shrink-0 bg-emerald-50 dark:bg-emerald-900/20 px-4 py-3 rounded-2xl border border-emerald-100 dark:border-emerald-800/30">
+                              <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">Score</div>
+                              <div className="text-2xl font-black text-emerald-700 dark:text-emerald-300">
                                 {ev.marksObtained !== null ? `${ev.marksObtained}/${ev.totalMarks || 100}` : 'Pending'}
                               </div>
                             </div>
@@ -412,7 +515,54 @@ const CTODashboard = () => {
                         ))}
                       </div>
                     ) : (
-                      <div className="text-gray-500 text-sm italic">No evaluations recorded yet.</div>
+                      <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl border border-gray-100 dark:border-gray-700 text-center shadow-sm">
+                        <Award className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                        <div className="text-gray-500 font-medium">No faculty evaluations recorded</div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mb-4">
+                    <h3 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4 px-2 flex items-center">
+                      <UsersRound className="w-4 h-4 mr-2" /> Peer Reviews
+                    </h3>
+                    
+                    {selectedProject.examineeAssignments?.length > 0 ? (
+                      <div className="space-y-4">
+                        {selectedProject.examineeAssignments.map(assignment => (
+                          <div key={assignment.id} className="bg-white dark:bg-gray-800 p-5 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                            <div className="font-bold text-gray-900 dark:text-white mb-4">Phase {assignment.phase?.phaseNumber} Peer Review</div>
+                            
+                            {assignment.evaluations?.length > 0 ? (
+                              <div className="space-y-3">
+                                {assignment.evaluations.map(pe => (
+                                  <div key={pe.id} className="bg-blue-50/50 dark:bg-blue-900/20 p-4 rounded-2xl border border-blue-100 dark:border-blue-800/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                    <div className="flex-1">
+                                      <div className="text-sm font-bold text-gray-800 dark:text-gray-200">Reviewer: {pe.reviewerStudent?.user?.name || 'Peer'}</div>
+                                      {pe.marksData?.remarks && <div className="text-sm text-gray-600 dark:text-gray-400 mt-2 italic">"{pe.marksData.remarks}"</div>}
+                                    </div>
+                                    <div className="shrink-0 text-right">
+                                      <div className="text-xs font-bold text-blue-500 uppercase tracking-wider mb-1">Marks</div>
+                                      <div className="text-xl font-black text-blue-700 dark:text-blue-400">
+                                        {pe.totalMarks}/50
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-sm font-medium text-gray-500 bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl text-center">
+                                Peer evaluations pending
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl border border-gray-100 dark:border-gray-700 text-center shadow-sm">
+                        <UsersRound className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+                        <div className="text-gray-500 font-medium">No peer reviews conducted for this project</div>
+                      </div>
                     )}
                   </div>
                 </div>

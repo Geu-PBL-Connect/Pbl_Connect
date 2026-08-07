@@ -138,6 +138,14 @@ const getProjectsList = async (req, res, next) => {
         },
         submissions: {
           include: { phase: true, mentorGrades: true }
+        },
+        examineeAssignments: {
+          include: {
+            evaluations: {
+              include: { reviewerStudent: { include: { user: { select: { name: true } } } } }
+            },
+            phase: true
+          }
         }
       },
       orderBy: { createdAt: 'desc' }
