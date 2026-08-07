@@ -18,16 +18,14 @@ const getDashboardMetrics = async (req, res, next) => {
       include: {
         submissions: {
           include: { mentorGrades: true }
-        },
-        evaluations: true
+        }
       }
     });
 
+    const allEvaluations = await prisma.evaluation.findMany();
+
     let mentorApprovedCount = 0;
     let mentorRejectedCount = 0;
-    let totalMentorMarks = 0;
-    let mentorMarksCount = 0;
-    
     let totalTeacherMarks = 0;
     let teacherMarksCount = 0;
 
@@ -39,24 +37,21 @@ const getDashboardMetrics = async (req, res, next) => {
     };
 
     teams.forEach(team => {
-      // Mentor approval is based on superMentorStatus or Phase 1 mentor marks.
-      // We'll use superMentorStatus for explicit approval
       if (team.superMentorStatus === 'APPROVED') mentorApprovedCount++;
       else if (team.superMentorStatus === 'REJECTED') mentorRejectedCount++;
+    });
 
-      // Average Teacher Evaluation
-      team.evaluations.forEach(ev => {
-        if (ev.marksObtained !== null) {
-          totalTeacherMarks += ev.marksObtained;
-          teacherMarksCount++;
-          
-          let pct = (ev.marksObtained / (ev.totalMarks || 100)) * 100;
-          if (pct >= 80) distribution['Excellent (≥80%)']++;
-          else if (pct >= 65) distribution['Good (65-79%)']++;
-          else if (pct >= 50) distribution['Average (50-64%)']++;
-          else distribution['Needs Improvement (<50%)']++;
-        }
-      });
+    allEvaluations.forEach(ev => {
+      if (ev.totalMarks !== null && ev.totalMarks !== undefined) {
+        totalTeacherMarks += ev.totalMarks;
+        teacherMarksCount++;
+        
+        let pct = ev.totalMarks; // assuming totalMarks is the percentage or actual marks out of 100 for simplicity in this metric
+        if (pct >= 80) distribution['Excellent (≥80%)']++;
+        else if (pct >= 65) distribution['Good (65-79%)']++;
+        else if (pct >= 50) distribution['Average (50-64%)']++;
+        else distribution['Needs Improvement (<50%)']++;
+      }
     });
 
     const avgTeacherEvaluation = teacherMarksCount > 0 
@@ -105,15 +100,36 @@ const getProjectsList = async (req, res, next) => {
         },
         submissions: {
           include: { phase: true, mentorGrades: true }
-        },
-        evaluations: {
-          include: { evaluator: { include: { user: { select: { name: true } } } }, phase: true }
         }
       },
       orderBy: { createdAt: 'desc' }
     });
 
-    res.json(teams);
+    // Fetch all evaluations and group by student to attach to team
+    const allEvaluations = await prisma.evaluation.findMany({
+      include: { phase: true, evaluator: { include: { user: { select: { name: true } } } } }
+    });
+
+    const formattedTeams = teams.map(team => {
+      // Find evaluations for the leader of the team as a proxy for the team's evaluations
+      const leaderEvaluations = allEvaluations.filter(ev => ev.studentId === team.leaderId);
+      
+      const mappedEvaluations = leaderEvaluations.map(ev => ({
+        id: ev.id,
+        phase: ev.phase,
+        evaluator: ev.evaluator,
+        remarks: ev.marksData?.remarks || '',
+        marksObtained: ev.totalMarks,
+        totalMarks: 100
+      }));
+
+      return {
+        ...team,
+        evaluations: mappedEvaluations
+      };
+    });
+
+    res.json(formattedTeams);
   } catch (error) {
     next(error);
   }
