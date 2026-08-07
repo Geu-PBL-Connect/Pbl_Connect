@@ -36,7 +36,7 @@ jobs:
             npx prisma db push
             
             # Restart backend using PM2
-            pm2 restart backend
+            pm2 restart pbl-backend
             
             # --- FRONTEND DEPLOYMENT ---
             cd ../frontend
