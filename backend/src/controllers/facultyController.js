@@ -258,6 +258,26 @@ const mentorGradeSubmission = async (req, res, next) => {
   }
 };
 
+// Helper to enforce Evaluation Timelines
+const checkTimelineAccess = async (phaseId, isEdit = false) => {
+  const timeline = await prisma.evaluationTimeline.findUnique({ where: { phaseId } });
+  if (!timeline) return; // No timeline defined, open by default
+
+  const now = new Date();
+  if (timeline.isLocked) {
+    const err = new Error("Grading is currently locked by the Administrator.");
+    err.status = 403;
+    throw err;
+  }
+
+  const end = (isEdit && timeline.editEndDate) ? timeline.editEndDate : timeline.endDate;
+  if (now < timeline.startDate || now > end) {
+    const err = new Error(isEdit ? "Grade editing timeline has expired." : "Grading timeline has expired or has not yet started.");
+    err.status = 403;
+    throw err;
+  }
+};
+
 // @desc    Evaluate a student's phase submission as an Evaluator
 // @route   POST /api/faculty/evaluator/evaluate/:phaseId/:studentId
 // @access  Private/Faculty
@@ -279,6 +299,14 @@ const evaluateStudent = async (req, res, next) => {
         totalMarks += Number(mark);
       }
     });
+
+    const existingEval = await prisma.evaluation.findUnique({
+      where: {
+        phaseId_studentId_evaluatorId: { phaseId, studentId, evaluatorId: facultyId },
+      },
+    });
+
+    await checkTimelineAccess(phaseId, !!existingEval);
 
     const evaluation = await prisma.evaluation.upsert({
       where: {
@@ -351,6 +379,9 @@ const finishTeamEvaluation = async (req, res, next) => {
       res.status(403);
       throw new Error("Not authorized to evaluate this team phase.");
     }
+
+    const isEdit = teamPhaseEvaluator.status === "EVALUATED";
+    await checkTimelineAccess(phaseId, isEdit);
 
     const updated = await prisma.teamPhaseEvaluator.update({
       where: { id: teamPhaseEvaluator.id },

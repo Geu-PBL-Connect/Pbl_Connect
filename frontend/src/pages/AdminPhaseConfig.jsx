@@ -6,9 +6,9 @@ const AdminPhaseConfig = () => {
   const [selectedPbl, setSelectedPbl] = useState('');
   
   const [configs, setConfigs] = useState([
-    { phaseNumber: 1, instructions: '', evaluationCriteria: [] },
-    { phaseNumber: 2, instructions: '', evaluationCriteria: [] },
-    { phaseNumber: 3, instructions: '', evaluationCriteria: [] },
+    { phaseNumber: 1, instructions: '', evaluationCriteria: [], moodleAssignmentId: '', timeline: { startDate: '', endDate: '', editEndDate: '', isLocked: false } },
+    { phaseNumber: 2, instructions: '', evaluationCriteria: [], moodleAssignmentId: '', timeline: { startDate: '', endDate: '', editEndDate: '', isLocked: false } },
+    { phaseNumber: 3, instructions: '', evaluationCriteria: [], moodleAssignmentId: '', timeline: { startDate: '', endDate: '', editEndDate: '', isLocked: false } },
   ]);
   const [activeTab, setActiveTab] = useState(1);
 
@@ -30,9 +30,9 @@ const AdminPhaseConfig = () => {
   useEffect(() => {
     if (!selectedPbl) {
       setConfigs([
-        { phaseNumber: 1, instructions: '', evaluationCriteria: [], moodleAssignmentId: '' },
-        { phaseNumber: 2, instructions: '', evaluationCriteria: [], moodleAssignmentId: '' },
-        { phaseNumber: 3, instructions: '', evaluationCriteria: [], moodleAssignmentId: '' },
+        { phaseNumber: 1, instructions: '', evaluationCriteria: [], moodleAssignmentId: '', timeline: { startDate: '', endDate: '', editEndDate: '', isLocked: false } },
+        { phaseNumber: 2, instructions: '', evaluationCriteria: [], moodleAssignmentId: '', timeline: { startDate: '', endDate: '', editEndDate: '', isLocked: false } },
+        { phaseNumber: 3, instructions: '', evaluationCriteria: [], moodleAssignmentId: '', timeline: { startDate: '', endDate: '', editEndDate: '', isLocked: false } },
       ]);
       return;
     }
@@ -41,11 +41,24 @@ const AdminPhaseConfig = () => {
     if (pbl && pbl.phases && pbl.phases.length > 0) {
       const newConfigs = [1, 2, 3].map(num => {
         const existing = pbl.phases.find(ph => ph.phaseNumber === num);
+        const tl = existing?.evaluationTimeline;
+        
+        const formatDate = (d) => {
+          if (!d) return '';
+          return new Date(d).toISOString().slice(0, 16); // YYYY-MM-DDThh:mm
+        };
+
         return {
           phaseNumber: num,
           instructions: existing?.instructions || '',
           evaluationCriteria: existing?.evaluationCriteria || [],
-          moodleAssignmentId: existing?.moodleAssignmentId || ''
+          moodleAssignmentId: existing?.moodleAssignmentId || '',
+          timeline: {
+            startDate: formatDate(tl?.startDate),
+            endDate: formatDate(tl?.endDate),
+            editEndDate: formatDate(tl?.editEndDate),
+            isLocked: tl?.isLocked || false
+          }
         };
       });
       setConfigs(newConfigs);
@@ -147,6 +160,66 @@ const AdminPhaseConfig = () => {
                     setConfigs(newConfigs);
                   }}
                 />
+              </div>
+
+              {/* Timeline Configuration */}
+              <div className="p-4 border border-indigo-100 dark:border-indigo-900/50 rounded-xl bg-indigo-50/30 dark:bg-indigo-900/10 space-y-4">
+                <h3 className="text-sm font-bold text-indigo-900 dark:text-indigo-200">Evaluation Timeline (Locking)</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Grading Start Date</label>
+                    <input 
+                      type="datetime-local" 
+                      className="w-full px-3 py-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      value={configs[activeTab - 1].timeline.startDate}
+                      onChange={(e) => {
+                        const newConfigs = [...configs];
+                        newConfigs[activeTab - 1].timeline.startDate = e.target.value;
+                        setConfigs(newConfigs);
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Grading End Date</label>
+                    <input 
+                      type="datetime-local" 
+                      className="w-full px-3 py-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      value={configs[activeTab - 1].timeline.endDate}
+                      onChange={(e) => {
+                        const newConfigs = [...configs];
+                        newConfigs[activeTab - 1].timeline.endDate = e.target.value;
+                        setConfigs(newConfigs);
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Edit Grace Period (Optional)</label>
+                    <input 
+                      type="datetime-local" 
+                      className="w-full px-3 py-2 border rounded-lg text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      value={configs[activeTab - 1].timeline.editEndDate}
+                      onChange={(e) => {
+                        const newConfigs = [...configs];
+                        newConfigs[activeTab - 1].timeline.editEndDate = e.target.value;
+                        setConfigs(newConfigs);
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <input 
+                    type="checkbox" 
+                    id={`lock-${activeTab}`}
+                    checked={configs[activeTab - 1].timeline.isLocked}
+                    onChange={(e) => {
+                      const newConfigs = [...configs];
+                      newConfigs[activeTab - 1].timeline.isLocked = e.target.checked;
+                      setConfigs(newConfigs);
+                    }}
+                    className="w-4 h-4 text-indigo-600 rounded"
+                  />
+                  <label htmlFor={`lock-${activeTab}`} className="text-sm font-medium text-gray-700 dark:text-gray-300">Force Lock Grading (Override Timeline)</label>
+                </div>
               </div>
 
               <div>

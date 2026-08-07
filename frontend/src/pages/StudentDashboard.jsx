@@ -225,7 +225,7 @@ const StudentDashboard = () => {
                 <div className="mt-2 bg-gray-50 dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700">
                   <h4 className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">Phase Evaluators</h4>
                   <div className="flex flex-wrap gap-2">
-                    {viewingTeam.phaseEvaluators.map((pe, idx) => (
+                    {[...viewingTeam.phaseEvaluators].sort((a, b) => a.phase.phaseNumber - b.phase.phaseNumber).map((pe, idx) => (
                       <div key={idx} className="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-600 px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-sm">
                         <span className="font-bold text-blue-600 dark:text-blue-400">Phase {pe.phase.phaseNumber}:</span>
                         <span className="text-gray-700 dark:text-gray-300">{pe.evaluator.user.name}</span>

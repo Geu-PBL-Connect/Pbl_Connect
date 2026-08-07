@@ -98,7 +98,7 @@ const getPbls = async (req, res, next) => {
   try {
     const pbls = await prisma.pbl.findMany({
       orderBy: { createdAt: 'desc' },
-      include: { phases: { orderBy: { phaseNumber: 'asc' } } }
+      include: { phases: { orderBy: { phaseNumber: 'asc' }, include: { evaluationTimeline: true } } }
     });
     res.json(pbls);
   } catch (error) {
@@ -1168,6 +1168,26 @@ const updatePhaseConfig = async (req, res, next) => {
           submissionEnd
         }
       });
+      
+      if (config.timeline && config.timeline.startDate && config.timeline.endDate) {
+        await prisma.evaluationTimeline.upsert({
+          where: { phaseId: phase.id },
+          update: {
+            startDate: new Date(config.timeline.startDate),
+            endDate: new Date(config.timeline.endDate),
+            editEndDate: config.timeline.editEndDate ? new Date(config.timeline.editEndDate) : null,
+            isLocked: config.timeline.isLocked || false
+          },
+          create: {
+            phaseId: phase.id,
+            startDate: new Date(config.timeline.startDate),
+            endDate: new Date(config.timeline.endDate),
+            editEndDate: config.timeline.editEndDate ? new Date(config.timeline.editEndDate) : null,
+            isLocked: config.timeline.isLocked || false
+          }
+        });
+      }
+
       updatedPhases.push(phase);
     }
 

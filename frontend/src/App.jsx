@@ -28,6 +28,9 @@ import SuperAdminLayout from './components/SuperAdminLayout';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import SuperAdminSettings from './pages/SuperAdminSettings';
 
+import CTOLayout from './components/CTOLayout';
+import CTODashboard from './pages/CTODashboard';
+
 import DeveloperInfo from './components/DeveloperInfo';
 
 function App() {
@@ -43,6 +46,12 @@ function App() {
           <Route index element={<Navigate to="/super-admin/dashboard" replace />} />
           <Route path="dashboard" element={<SuperAdminDashboard />} />
           <Route path="settings" element={<SuperAdminSettings />} />
+        </Route>
+
+        {/* CTO Routes */}
+        <Route path="/cto" element={<CTOLayout />}>
+          <Route index element={<Navigate to="/cto/dashboard" replace />} />
+          <Route path="dashboard" element={<CTODashboard />} />
         </Route>
 
         {/* Admin Routes */}

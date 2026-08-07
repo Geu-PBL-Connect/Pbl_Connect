@@ -20,6 +20,7 @@ model User {
   updatedAt              DateTime  @updatedAt
   facultyProfile         Faculty?
   studentProfile         Student?
+  notifications          NotificationRecipient[]
 }
 
 model Faculty {
@@ -134,6 +135,7 @@ model Phase {
   reevaluationAssignments ReevaluationAssignment[]
   submissions             Submission[]
   teamEvaluators          TeamPhaseEvaluator[]
+  evaluationTimeline      EvaluationTimeline?
 
   @@unique([pblId, phaseNumber])
 }
@@ -297,4 +299,72 @@ enum Role {
   ADMIN
   FACULTY
   STUDENT
+  CTO
+}
+
+enum NotificationType {
+  INFORMATION
+  WARNING
+  DEADLINE
+  URGENT
+  SUCCESS
+  REMINDER
+}
+
+model EvaluationTimeline {
+  id             String            @id @default(uuid())
+  phaseId        String            @unique
+  startDate      DateTime
+  endDate        DateTime
+  editEndDate    DateTime?         // Optional grace period for editing grades
+  isLocked       Boolean           @default(false)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  phase          Phase             @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  editLogs       EvaluationEditLog[]
+}
+
+model EvaluationEditLog {
+  id             String             @id @default(uuid())
+  timelineId     String
+  evaluatorId    String
+  teamId         String
+  oldMarks       Json?
+  newMarks       Json
+  editedAt       DateTime           @default(now())
+  reason         String?
+  timeline       EvaluationTimeline @relation(fields: [timelineId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id             String                  @id @default(uuid())
+  title          String
+  message        String
+  type           NotificationType        @default(INFORMATION)
+  senderId       String?                 // Admin user ID who sent it
+  createdAt      DateTime                @default(now())
+  expiresAt      DateTime?
+  recipients     NotificationRecipient[]
+}
+
+model NotificationRecipient {
+  id             String       @id @default(uuid())
+  notificationId String
+  userId         String
+  isRead         Boolean      @default(false)
+  readAt         DateTime?
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationId, userId])
+}
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+  entityType  String   // e.g., "TEAM", "SUBMISSION", "EVALUATION"
+  entityId    String
+  action      String   // e.g., "SUBMITTED", "GRADED", "LOCKED"
+  userId      String?  // Who performed the action
+  metadata    Json?
+  createdAt   DateTime @default(now())
 }

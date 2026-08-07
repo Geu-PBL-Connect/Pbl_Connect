@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { MapPin } from 'lucide-react';
 
 const FacultyEvaluatorTeams = () => {
   const [teams, setTeams] = useState([]);
@@ -288,6 +289,13 @@ const FacultyEvaluatorTeams = () => {
             </select>
           )}
         </div>
+
+        <button 
+          onClick={() => setShowVenueModal(true)} 
+          className="px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 shadow-sm flex items-center justify-center gap-2 text-xs shrink-0"
+        >
+          <MapPin className="w-3.5 h-3.5" /> Set Location / Venue
+        </button>
       </div>
 
       {/* Tabs */}

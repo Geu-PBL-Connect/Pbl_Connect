@@ -91,6 +91,9 @@ app.use("/api/student", require("./routes/studentRoutes"));
 app.use("/api/files", require("./routes/fileRoutes"));
 app.use("/api/super-admin", require("./routes/superAdminRoutes"));
 app.use("/api/integrations", require("./routes/integrationRoutes"));
+app.use("/api/cto", require("./routes/ctoRoutes"));
+app.use("/api/notifications", require("./routes/notificationRoutes"));
+app.use("/api/timelines", require("./routes/timelineRoutes"));
 
 // Health Check
 app.get("/api/health", (req, res) => {
