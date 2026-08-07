@@ -13,6 +13,14 @@ const getDashboardMetrics = async (req, res, next) => {
     const studentsWithTeams = await prisma.teamMember.count({
       where: { status: 'APPROVED' }
     });
+    
+    const activePbls = await prisma.pbl.count({
+      where: { status: 'ACTIVE' }
+    });
+
+    const teamsWithoutMentor = await prisma.team.count({
+      where: { mentorId: null }
+    });
 
     const teams = await prisma.team.findMany({
       include: {
@@ -68,9 +76,11 @@ const getDashboardMetrics = async (req, res, next) => {
         total: totalTeams, 
         mentorApproved: mentorApprovedCount,
         mentorRejected: mentorRejectedCount,
-        pending: totalTeams - mentorApprovedCount - mentorRejectedCount
+        pending: totalTeams - mentorApprovedCount - mentorRejectedCount,
+        withoutMentor: teamsWithoutMentor
       },
       mentors: { total: totalMentors },
+      pbls: { active: activePbls },
       evaluationStats: {
         averageScore: avgTeacherEvaluation,
         distribution: [

@@ -3,7 +3,7 @@ import axios from 'axios';
 import { 
   Users, Briefcase, CheckCircle, XCircle, Award, 
   BarChart3, PieChart, Activity, Search, FolderKanban, 
-  ChevronRight, ArrowUpRight
+  ChevronRight, ArrowUpRight, UserCheck, UserX, UsersRound, BookOpen, User
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
@@ -94,38 +94,62 @@ const CTODashboard = () => {
       {activeTab === 'overview' && (
         <div className="space-y-8 animate-fade-in">
           {/* Top Metric Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <MetricCard 
               title="Total Students" 
               value={metrics?.students?.total} 
-              subtitle={`${metrics?.students?.withTeams} formed teams`}
+              subtitle="Registered students"
               icon={<Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />} 
               gradient="from-blue-500/10 to-cyan-500/10"
               borderColor="border-blue-200 dark:border-blue-900/50"
             />
             <MetricCard 
-              title="Total Teams" 
-              value={metrics?.projects?.total} 
-              subtitle="Registered groups"
-              icon={<Briefcase className="w-6 h-6 text-purple-600 dark:text-purple-400" />} 
-              gradient="from-purple-500/10 to-pink-500/10"
-              borderColor="border-purple-200 dark:border-purple-900/50"
-            />
-            <MetricCard 
-              title="Mentor Approved" 
-              value={metrics?.projects?.mentorApproved} 
-              subtitle="Quality check passed"
-              icon={<CheckCircle className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />} 
+              title="Students With Team" 
+              value={metrics?.students?.withTeams} 
+              subtitle="Formed teams"
+              icon={<UserCheck className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />} 
               gradient="from-emerald-500/10 to-teal-500/10"
               borderColor="border-emerald-200 dark:border-emerald-900/50"
             />
             <MetricCard 
-              title="Mentor Rejected" 
-              value={metrics?.projects?.mentorRejected} 
-              subtitle="Requires revision"
-              icon={<XCircle className="w-6 h-6 text-rose-600 dark:text-rose-400" />} 
+              title="Students Without Team" 
+              value={metrics?.students?.withoutTeams} 
+              subtitle="Pending formation"
+              icon={<UserX className="w-6 h-6 text-orange-600 dark:text-orange-400" />} 
+              gradient="from-orange-500/10 to-amber-500/10"
+              borderColor="border-orange-200 dark:border-orange-900/50"
+            />
+            <MetricCard 
+              title="Total Teams" 
+              value={metrics?.projects?.total} 
+              subtitle="Registered groups"
+              icon={<UsersRound className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />} 
+              gradient="from-indigo-500/10 to-blue-500/10"
+              borderColor="border-indigo-200 dark:border-indigo-900/50"
+            />
+            <MetricCard 
+              title="Teams Without Mentor" 
+              value={metrics?.projects?.withoutMentor} 
+              subtitle="Unassigned teams"
+              icon={<Users className="w-6 h-6 text-rose-600 dark:text-rose-400" />} 
               gradient="from-rose-500/10 to-red-500/10"
               borderColor="border-rose-200 dark:border-rose-900/50"
+            />
+            <MetricCard 
+              title="Total Mentors" 
+              value={metrics?.mentors?.total} 
+              subtitle="Faculty members"
+              icon={<User className="w-6 h-6 text-purple-600 dark:text-purple-400" />} 
+              gradient="from-purple-500/10 to-pink-500/10"
+              borderColor="border-purple-200 dark:border-purple-900/50"
+            />
+            <MetricCard 
+              title="Active PBLs" 
+              value={metrics?.pbls?.active} 
+              subtitle="Ongoing batches"
+              icon={<BookOpen className="w-6 h-6 text-cyan-600 dark:text-cyan-400" />} 
+              gradient="from-cyan-500/10 to-blue-500/10"
+              borderColor="border-cyan-200 dark:border-cyan-900/50"
             />
             <MetricCard 
               title="Avg Eval Score" 
