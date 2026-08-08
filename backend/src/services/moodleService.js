@@ -478,11 +478,23 @@ const syncTeamToMoodleGroup = async (teamName, assignmentId, studentMoodleIds) =
     const assignParams = new URLSearchParams({
       wstoken: config.MOODLE_API_TOKEN,
       wsfunction: 'mod_assign_get_assignments',
-      moodlewsrestformat: 'json',
-      'assignmentids[0]': assignmentId
+      moodlewsrestformat: 'json'
     });
     const assignRes = await axios.post(`${config.MOODLE_URL}/webservice/rest/server.php`, assignParams.toString());
-    const courseId = assignRes.data?.courses?.[0]?.id;
+    
+    let courseId = null;
+    if (assignRes.data && assignRes.data.courses) {
+      for (const course of assignRes.data.courses) {
+        for (const assignment of course.assignments) {
+          if (assignment.id == assignmentId || assignment.cmid == assignmentId) {
+            courseId = course.id;
+            break;
+          }
+        }
+        if (courseId) break;
+      }
+    }
+
     if (!courseId) throw new Error('Could not find course ID for assignment');
 
     // 2. Check if group exists or create it
