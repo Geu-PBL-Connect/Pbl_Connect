@@ -510,7 +510,13 @@ const syncTeamToMoodleGroup = async (teamName, assignmentId, studentMoodleIds) =
       courseid: courseId
     });
     const groupsRes = await axios.post(`${config.MOODLE_URL}/webservice/rest/server.php`, groupsParams.toString());
-    let groupId = groupsRes.data?.find(g => g.name === teamName)?.id;
+    
+    if (groupsRes.data?.exception) {
+      console.error(`[MoodleGroupSync] Moodle API exception when fetching groups:`, groupsRes.data);
+      throw new Error(groupsRes.data.message);
+    }
+    
+    let groupId = Array.isArray(groupsRes.data) ? groupsRes.data.find(g => g.name === teamName)?.id : null;
     console.log(`[MoodleGroupSync] Existing group ID for ${teamName}: ${groupId}`);
 
     if (!groupId) {
@@ -551,8 +557,12 @@ const syncTeamToMoodleGroup = async (teamName, assignmentId, studentMoodleIds) =
           'members[0][groupid]': groupId,
           'members[0][userid]': moodleUserId
         });
-        await axios.post(`${config.MOODLE_URL}/webservice/rest/server.php`, addParams.toString());
-        console.log(`[MoodleGroupSync] Added user ${username} (ID: ${moodleUserId}) to group ${groupId}`);
+        const addRes = await axios.post(`${config.MOODLE_URL}/webservice/rest/server.php`, addParams.toString());
+        if (addRes.data?.exception) {
+           console.warn(`[MoodleGroupSync] Failed to add user ${username} to group:`, addRes.data.message);
+        } else {
+           console.log(`[MoodleGroupSync] Added user ${username} (ID: ${moodleUserId}) to group ${groupId}`);
+        }
       } else {
         console.warn(`[MoodleGroupSync] Could not find Moodle user ${username}, skipping.`);
       }
