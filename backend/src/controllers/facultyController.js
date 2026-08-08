@@ -103,7 +103,11 @@ const pushGradeToMoodleForTeam = async (teamId, phaseId, grade, feedbackText, su
       });
     }
 
+    const team = await prisma.team.findUnique({ where: { id: teamId } });
     let feedback = feedbackText || (grade === 1 ? "Approved" : "Rejected");
+    if (team?.teamName) {
+      feedback = `[Team: ${team.teamName}]\n${feedback}`;
+    }
 
     if (targetSubmission?.synopsisUrl) {
       const signature = crypto

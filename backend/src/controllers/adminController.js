@@ -2432,6 +2432,9 @@ const overrideSuperMentorReview = async (req, res, next) => {
       });
       if (phase?.moodleAssignmentId) {
         let moodleFeedback = feedback ? feedback.trim() : (isApproved ? "Approved by Admin" : "Rejected by Admin");
+        if (updatedTeam?.teamName) {
+          moodleFeedback = `[Team: ${updatedTeam.teamName}]\n${moodleFeedback}`;
+        }
         if (latestSubmission.synopsisUrl) {
           const signature = crypto
             .createHmac("sha256", process.env.JWT_SECRET || "default_secret")
