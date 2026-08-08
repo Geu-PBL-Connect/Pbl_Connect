@@ -1,3 +1,5 @@
+import { openPrivateFile } from "../utils/fileViewer";
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { MapPin } from 'lucide-react';
@@ -393,9 +395,13 @@ const FacultyEvaluatorTeams = () => {
                         </div>
                         {submission?.synopsisUrl && (
                           <div className="mt-2 text-right">
-                            <a href={submission.synopsisUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline text-xs font-bold">
+                            <button
+                              type="button"
+                              onClick={() => openPrivateFile(submission.id)}
+                              className="text-blue-600 dark:text-blue-400 hover:underline text-xs font-bold"
+                            >
                               📄 View Document
-                            </a>
+                            </button>
                           </div>
                         )}
 
