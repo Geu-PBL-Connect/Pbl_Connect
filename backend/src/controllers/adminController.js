@@ -2434,6 +2434,12 @@ const overrideSuperMentorReview = async (req, res, next) => {
         let moodleFeedback = feedback ? feedback.trim() : (isApproved ? "Approved by Admin" : "Rejected by Admin");
         if (updatedTeam?.teamName) {
           moodleFeedback = `[Team: ${updatedTeam.teamName}]\n${moodleFeedback}`;
+
+          const { syncTeamToMoodleGroup } = require('../services/moodleService');
+          const moodleIds = updatedTeam.members
+            .map(m => m.student?.moodleId || m.student?.enrollmentNumber)
+            .filter(Boolean);
+          syncTeamToMoodleGroup(updatedTeam.teamName, phase.moodleAssignmentId, moodleIds).catch(err => console.error("Admin moodle group sync err:", err));
         }
         if (latestSubmission.synopsisUrl) {
           const signature = crypto

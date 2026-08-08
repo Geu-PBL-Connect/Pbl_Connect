@@ -469,7 +469,81 @@ const enrollUserInMoodleCourse = async (moodleUsername, courseId, roleName) => {
   }
 };
 
+const syncTeamToMoodleGroup = async (teamName, assignmentId, studentMoodleIds) => {
+  try {
+    const config = await getMoodleConfig();
+    if (!config.MOODLE_URL || !config.MOODLE_API_TOKEN || !assignmentId) return false;
+
+    // 1. Get Course ID
+    const assignParams = new URLSearchParams({
+      wstoken: config.MOODLE_API_TOKEN,
+      wsfunction: 'mod_assign_get_assignments',
+      moodlewsrestformat: 'json',
+      'assignmentids[0]': assignmentId
+    });
+    const assignRes = await axios.post(`${config.MOODLE_URL}/webservice/rest/server.php`, assignParams.toString());
+    const courseId = assignRes.data?.courses?.[0]?.id;
+    if (!courseId) throw new Error('Could not find course ID for assignment');
+
+    // 2. Check if group exists or create it
+    const groupsParams = new URLSearchParams({
+      wstoken: config.MOODLE_API_TOKEN,
+      wsfunction: 'core_group_get_course_groups',
+      moodlewsrestformat: 'json',
+      courseid: courseId
+    });
+    const groupsRes = await axios.post(`${config.MOODLE_URL}/webservice/rest/server.php`, groupsParams.toString());
+    let groupId = groupsRes.data?.find(g => g.name === teamName)?.id;
+
+    if (!groupId) {
+      const createParams = new URLSearchParams({
+        wstoken: config.MOODLE_API_TOKEN,
+        wsfunction: 'core_group_create_groups',
+        moodlewsrestformat: 'json',
+        'groups[0][courseid]': courseId,
+        'groups[0][name]': teamName
+      });
+      const createRes = await axios.post(`${config.MOODLE_URL}/webservice/rest/server.php`, createParams.toString());
+      if (createRes.data?.exception) throw new Error(createRes.data.message);
+      groupId = createRes.data?.[0]?.id;
+    }
+
+    if (!groupId) throw new Error('Failed to create or find group');
+
+    // 3. Get user IDs in Moodle and add to group
+    for (let i = 0; i < studentMoodleIds.length; i++) {
+      const username = studentMoodleIds[i];
+      const userParams = new URLSearchParams({
+        wstoken: config.MOODLE_API_TOKEN,
+        wsfunction: 'core_user_get_users_by_field',
+        moodlewsrestformat: 'json',
+        field: 'username',
+        'values[0]': username
+      });
+      const userRes = await axios.post(`${config.MOODLE_URL}/webservice/rest/server.php`, userParams.toString());
+      const moodleUserId = userRes.data?.[0]?.id;
+      
+      if (moodleUserId) {
+        const addParams = new URLSearchParams({
+          wstoken: config.MOODLE_API_TOKEN,
+          wsfunction: 'core_group_add_group_members',
+          moodlewsrestformat: 'json',
+          'members[0][groupid]': groupId,
+          'members[0][userid]': moodleUserId
+        });
+        await axios.post(`${config.MOODLE_URL}/webservice/rest/server.php`, addParams.toString());
+      }
+    }
+    console.log(`[MoodleSync] Synced team ${teamName} to Moodle Group`);
+    return true;
+  } catch (err) {
+    console.error(`[MoodleSync] Group Sync Error:`, err.message);
+    return false;
+  }
+};
+
 module.exports = {
+  syncTeamToMoodleGroup,
   getMoodleConfig,
   syncMoodlePassword,
   uploadFileToMoodle,
