@@ -18,6 +18,7 @@ const {
   reviewSuperMentorTeam,
   checkSuperMentorRole,
   getTimelineWarnings,
+  exportEvaluatorMarks
 } = require('../controllers/facultyController');
 const { protect, authorize } = require('../middlewares/auth');
 
@@ -40,6 +41,7 @@ router.get('/team/:teamId/interactions', getInteractions);
 router.get('/evaluator/teams', getEvaluatedTeams);
 router.get('/evaluator/timeline-warnings', getTimelineWarnings);
 router.post('/evaluator/evaluate/:phaseId/:studentId', evaluateStudent);
+router.get('/evaluator/export-marks/:phaseId', exportEvaluatorMarks);
 router.get('/evaluator/evaluations/:phaseId/:teamId', getTeamEvaluations);
 router.put('/evaluator/finish/:phaseId/:teamId', finishTeamEvaluation);
 router.get('/evaluator/previous-remarks/:phaseNumber/:teamId', getPreviousPhaseRemarks);

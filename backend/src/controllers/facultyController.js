@@ -962,6 +962,54 @@ const getTimelineWarnings = async (req, res, next) => {
     next(error);
   }
 };
+const exportEvaluatorMarks = async (req, res, next) => {
+  try {
+    const facultyId = req.user.facultyProfileId;
+    const { phaseId } = req.params;
+
+    const evaluations = await prisma.evaluation.findMany({
+      where: {
+        evaluatorId: facultyId,
+        phaseId: phaseId
+      },
+      include: {
+        student: true,
+        phase: {
+          include: { pbl: true }
+        }
+      }
+    });
+
+    const teams = await prisma.team.findMany({
+      where: {
+        members: {
+          some: {
+            id: { in: evaluations.map(e => e.studentId) }
+          }
+        }
+      },
+      include: { members: true }
+    });
+
+    const result = evaluations.map(ev => {
+      const student = ev.student;
+      const team = teams.find(t => t.members.some(m => m.id === student.id));
+      
+      return {
+        team: team?.teamIdFormatted || 'N/A',
+        studentName: student.name,
+        rollNo: student.enrollmentNumber,
+        marksData: ev.marksData,
+        totalMarks: ev.totalMarks,
+        evaluatedAt: ev.evaluatedAt
+      };
+    });
+
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
 
 module.exports = {
   getMentoredTeams,
@@ -981,4 +1029,5 @@ module.exports = {
   reviewSuperMentorTeam,
   checkSuperMentorRole,
   getTimelineWarnings,
+  exportEvaluatorMarks
 };
