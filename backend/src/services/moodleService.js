@@ -471,6 +471,7 @@ const enrollUserInMoodleCourse = async (moodleUsername, courseId, roleName) => {
 
 const syncTeamToMoodleGroup = async (teamName, assignmentId, studentMoodleIds) => {
   try {
+    console.log(`[MoodleGroupSync] Starting sync for team ${teamName}, Assignment: ${assignmentId}, Students: ${studentMoodleIds.length}`);
     const config = await getMoodleConfig();
     if (!config.MOODLE_URL || !config.MOODLE_API_TOKEN || !assignmentId) return false;
 
@@ -488,6 +489,7 @@ const syncTeamToMoodleGroup = async (teamName, assignmentId, studentMoodleIds) =
         for (const assignment of course.assignments) {
           if (assignment.id == assignmentId || assignment.cmid == assignmentId) {
             courseId = course.id;
+            console.log(`[MoodleGroupSync] Resolved Course ID ${courseId} for assignment ${assignmentId}`);
             break;
           }
         }
@@ -495,7 +497,10 @@ const syncTeamToMoodleGroup = async (teamName, assignmentId, studentMoodleIds) =
       }
     }
 
-    if (!courseId) throw new Error('Could not find course ID for assignment');
+    if (!courseId) {
+      console.error(`[MoodleGroupSync] Could not find course ID for assignment ${assignmentId}. Response keys:`, Object.keys(assignRes.data || {}));
+      throw new Error('Could not find course ID for assignment');
+    }
 
     // 2. Check if group exists or create it
     const groupsParams = new URLSearchParams({
@@ -506,8 +511,10 @@ const syncTeamToMoodleGroup = async (teamName, assignmentId, studentMoodleIds) =
     });
     const groupsRes = await axios.post(`${config.MOODLE_URL}/webservice/rest/server.php`, groupsParams.toString());
     let groupId = groupsRes.data?.find(g => g.name === teamName)?.id;
+    console.log(`[MoodleGroupSync] Existing group ID for ${teamName}: ${groupId}`);
 
     if (!groupId) {
+      console.log(`[MoodleGroupSync] Group not found, creating new group for ${teamName}...`);
       const createParams = new URLSearchParams({
         wstoken: config.MOODLE_API_TOKEN,
         wsfunction: 'core_group_create_groups',
@@ -518,6 +525,7 @@ const syncTeamToMoodleGroup = async (teamName, assignmentId, studentMoodleIds) =
       const createRes = await axios.post(`${config.MOODLE_URL}/webservice/rest/server.php`, createParams.toString());
       if (createRes.data?.exception) throw new Error(createRes.data.message);
       groupId = createRes.data?.[0]?.id;
+      console.log(`[MoodleGroupSync] Created group ${teamName} with ID: ${groupId}`);
     }
 
     if (!groupId) throw new Error('Failed to create or find group');
@@ -544,9 +552,12 @@ const syncTeamToMoodleGroup = async (teamName, assignmentId, studentMoodleIds) =
           'members[0][userid]': moodleUserId
         });
         await axios.post(`${config.MOODLE_URL}/webservice/rest/server.php`, addParams.toString());
+        console.log(`[MoodleGroupSync] Added user ${username} (ID: ${moodleUserId}) to group ${groupId}`);
+      } else {
+        console.warn(`[MoodleGroupSync] Could not find Moodle user ${username}, skipping.`);
       }
     }
-    console.log(`[MoodleSync] Synced team ${teamName} to Moodle Group`);
+    console.log(`[MoodleSync] Synced team ${teamName} to Moodle Group (Course ${courseId}, Group ${groupId})`);
     return true;
   } catch (err) {
     console.error(`[MoodleSync] Group Sync Error:`, err.message);
