@@ -1,3 +1,4 @@
+import { openPrivateFile } from "../utils/fileViewer";
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
@@ -456,9 +457,9 @@ const CTODashboard = () => {
                             {(sub.synopsisUrl || sub.fileUrls) && (
                               <div className="mb-4 flex flex-wrap gap-3">
                                 {sub.synopsisUrl ? (
-                                  <a href={sub.synopsisUrl} target="_blank" rel="noreferrer" className="inline-flex items-center px-4 py-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-sm font-bold rounded-xl transition-colors">
+                                  <button type="button" onClick={() => openPrivateFile(sub.id)} className="inline-flex items-center px-4 py-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-sm font-bold rounded-xl transition-colors">
                                     <FileText className="w-4 h-4 mr-2"/> View Synopsis
-                                  </a>
+                                  </button>
                                 ) : (
                                   <a href={sub.fileUrls?.[0]} target="_blank" rel="noreferrer" className="inline-flex items-center px-4 py-2 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 text-sm font-bold rounded-xl transition-colors">
                                     <FileText className="w-4 h-4 mr-2"/> View Submission Document
