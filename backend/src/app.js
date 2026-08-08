@@ -89,6 +89,7 @@ app.use("/api/admin", require("./routes/adminRoutes"));
 app.use("/api/faculty", require("./routes/facultyRoutes"));
 app.use("/api/student", require("./routes/studentRoutes"));
 app.use("/api/files", require("./routes/fileRoutes"));
+app.use("/api/departments", require("./routes/departmentRoutes"));
 app.use("/api/super-admin", require("./routes/superAdminRoutes"));
 app.use("/api/integrations", require("./routes/integrationRoutes"));
 app.use("/api/cto", require("./routes/ctoRoutes"));

@@ -9,6 +9,26 @@ const toRoman = (num) => {
   return roman[num] || String(num);
 };
 
+const getDeptFilter = (req, prefix = '') => {
+  const filter = {};
+  if (req.user.role === 'ADMIN') {
+    if (req.user.departmentId) {
+      if (prefix) {
+        filter[prefix] = { departmentId: req.user.departmentId };
+      } else {
+        filter.departmentId = req.user.departmentId;
+      }
+    }
+  } else if (req.query.departmentId && req.query.departmentId !== 'All') {
+    if (prefix) {
+      filter[prefix] = { departmentId: req.query.departmentId };
+    } else {
+      filter.departmentId = req.query.departmentId;
+    }
+  }
+  return filter;
+};
+
 const assignPblFacultyIds = async (pblId, facultyId) => {
   const existing = await prisma.pblFaculty.findUnique({
     where: { pblId_facultyId: { pblId, facultyId } }
@@ -74,6 +94,7 @@ const createPbl = async (req, res, next) => {
         teamFormationEnd: teamFormationEnd ? new Date(teamFormationEnd) : null,
         moodleCourseId: moodleCourseId || null,
         createdBy: req.user.id,
+        departmentId: req.user.departmentId,
         phases: {
           create: [
             { phaseNumber: 1, instructions: 'Phase 1 instructions pending...', evaluationCriteria: [] },
@@ -97,6 +118,7 @@ const createPbl = async (req, res, next) => {
 const getPbls = async (req, res, next) => {
   try {
     const pbls = await prisma.pbl.findMany({
+      where: getDeptFilter(req),
       orderBy: { createdAt: 'desc' },
       include: { phases: { orderBy: { phaseNumber: 'asc' }, include: { evaluationTimeline: true } } }
     });
@@ -249,8 +271,7 @@ const uploadFaculty = async (req, res, next) => {
             name,
             email,
             passwordHash: defaultPassword,
-            role: 'FACULTY',
-            facultyProfile: { create: { department } }
+            role: 'FACULTY', departmentId: req.user.departmentId, facultyProfile: { create: {} }
           },
           include: { facultyProfile: true }
         });
@@ -260,8 +281,8 @@ const uploadFaculty = async (req, res, next) => {
         // Ensure faculty profile exists
         const faculty = await prisma.faculty.upsert({
           where: { userId: existingUser.id },
-          update: { department },
-          create: { userId: existingUser.id, department }
+          update: {},
+          create: { userId: existingUser.id }
         });
         facultyId = faculty.id;
       }
@@ -322,7 +343,7 @@ const bulkUploadFaculty = async (req, res, next) => {
             role: 'FACULTY',
             isVerified: true,
             facultyProfile: {
-              create: { department, moodleId }
+              create: { moodleId }
             }
           },
           include: { facultyProfile: true }
@@ -336,7 +357,7 @@ const bulkUploadFaculty = async (req, res, next) => {
         });
         facultyRecord = await prisma.faculty.update({
           where: { id: existingUser.facultyProfile.id },
-          data: { moodleId, department }
+          data: { moodleId }
         });
       }
 
@@ -403,8 +424,7 @@ const bulkUploadStudents = async (req, res, next) => {
             name,
             email: finalEmail,
             passwordHash: hashedPassword,
-            role: 'STUDENT',
-            isVerified: true,
+            role: 'STUDENT', departmentId: req.user.departmentId, isVerified: true,
             studentProfile: {
               create: {
                 enrollmentNumber: rollNo,
@@ -462,6 +482,7 @@ const bulkUploadStudents = async (req, res, next) => {
 const getAllStudents = async (req, res, next) => {
   try {
     const students = await prisma.student.findMany({
+      where: getDeptFilter(req, 'user'),
       include: {
         user: {
           select: { name: true, email: true }
@@ -690,42 +711,44 @@ const getDashboardStats = async (req, res, next) => {
           studentCount = await prisma.student.count({ where: { semester: pbl.semester } });
         }
       } else {
-        studentCount = await prisma.student.count();
+        studentCount = await prisma.student.count({ where: getDeptFilter(req, 'user') });
       }
     } else {
-      studentCount = await prisma.student.count();
+      studentCount = await prisma.student.count({ where: getDeptFilter(req, 'user') });
     }
 
     const teamCount = await prisma.team.count(
-      pblId ? { where: { pblId } } : undefined
+      pblId ? { where: { pblId } } : { where: { pbl: getDeptFilter(req) } }
     );
 
     const studentsWithTeamCount = await prisma.student.count({
-      where: pblId ? { teamMembers: { some: { team: { pblId } } } } : { teamMembers: { some: {} } }
+      where: pblId ? { teamMembers: { some: { team: { pblId } } } } : { teamMembers: { some: {} }, ...getDeptFilter(req, 'user') }
     });
 
     const studentsWithoutTeam = studentCount - studentsWithTeamCount;
 
-    const facultyCount = await prisma.faculty.count();
+    const facultyCount = await prisma.faculty.count({
+      where: getDeptFilter(req, 'user')
+    });
     
     const activePblsCount = await prisma.pbl.count({
-      where: { isArchived: false }
+      where: { isArchived: false, ...getDeptFilter(req) }
     });
 
     const teamsWithMentor = await prisma.team.count({
-      where: pblId ? { pblId, mentorId: { not: null } } : { mentorId: { not: null } }
+      where: pblId ? { pblId, mentorId: { not: null } } : { mentorId: { not: null }, pbl: getDeptFilter(req) }
     });
 
     const phase1Complete = await prisma.submission.count({
-      where: pblId ? { team: { pblId }, phase: { phaseNumber: 1 }, status: 'GRADED' } : { phase: { phaseNumber: 1 }, status: 'GRADED' }
+      where: pblId ? { team: { pblId }, phase: { phaseNumber: 1 }, status: 'GRADED' } : { phase: { phaseNumber: 1 }, status: 'GRADED', team: { pbl: getDeptFilter(req) } }
     });
 
     const phase2Complete = await prisma.submission.count({
-      where: pblId ? { team: { pblId }, phase: { phaseNumber: 2 }, status: 'GRADED' } : { phase: { phaseNumber: 2 }, status: 'GRADED' }
+      where: pblId ? { team: { pblId }, phase: { phaseNumber: 2 }, status: 'GRADED' } : { phase: { phaseNumber: 2 }, status: 'GRADED', team: { pbl: getDeptFilter(req) } }
     });
 
     const phase3Complete = await prisma.submission.count({
-      where: pblId ? { team: { pblId }, phase: { phaseNumber: 3 }, status: 'GRADED' } : { phase: { phaseNumber: 3 }, status: 'GRADED' }
+      where: pblId ? { team: { pblId }, phase: { phaseNumber: 3 }, status: 'GRADED' } : { phase: { phaseNumber: 3 }, status: 'GRADED', team: { pbl: getDeptFilter(req) } }
     });
 
     res.json({
@@ -756,6 +779,7 @@ const getFacultyGradingStats = async (req, res, next) => {
     const { pblId } = req.query;
 
     const faculties = await prisma.faculty.findMany({
+      where: getDeptFilter(req, 'user'),
       include: {
         user: true,
         evaluations: {
@@ -1261,9 +1285,8 @@ const deleteTeam = async (req, res, next) => {
           name,
           email,
           passwordHash: defaultPassword,
-          role: 'FACULTY',
-          facultyProfile: {
-            create: { department: department || 'General' }
+          role: 'FACULTY', departmentId: req.user.departmentId, facultyProfile: {
+            create: {  }
           }
         },
         include: { facultyProfile: true }
@@ -1287,7 +1310,7 @@ const deleteTeam = async (req, res, next) => {
 const getAllFaculty = async (req, res, next) => {
   try {
     const { pblId } = req.query;
-    const whereClause = pblId ? { pblFaculties: { some: { pblId } } } : {};
+    const whereClause = { ...getDeptFilter(req, 'user'), ...(pblId ? { pblFaculties: { some: { pblId } } } : {}) };
 
     const faculty = await prisma.faculty.findMany({
       where: whereClause,
@@ -1306,7 +1329,7 @@ const getTeamsForPbl = async (req, res, next) => {
   try {
     const { pblId } = req.params;
     const teams = await prisma.team.findMany({
-      where: { pblId },
+      where: { pblId, pbl: getDeptFilter(req) },
       include: {
         leader: { include: { user: true } },
         mentor: { include: { user: true, pblFaculties: { where: { pblId } } } },
@@ -1491,8 +1514,7 @@ const createTeamAdmin = async (req, res, next) => {
               email: `dummy_${m.rollNo}@dummy.geu.ac.in`,
               name: `Student ${m.rollNo}`,
               passwordHash: 'dummy',
-              role: 'STUDENT',
-              isVerified: false,
+              role: 'STUDENT', departmentId: req.user.departmentId, isVerified: false,
               studentProfile: {
                 create: {
                   enrollmentNumber: m.rollNo,
@@ -2603,3 +2625,4 @@ module.exports = {
   updateEvaluationSchedule,
   getFacultyGradingStats,
 };
+

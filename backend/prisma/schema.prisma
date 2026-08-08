@@ -18,15 +18,26 @@ model User {
   requiresPasswordChange Boolean   @default(true)
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
+  departmentId           String?
+  department             Department? @relation(fields: [departmentId], references: [id])
   facultyProfile         Faculty?
   studentProfile         Student?
   notifications          NotificationRecipient[]
 }
 
+model Department {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  code      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  users     User[]
+  pbls      Pbl[]
+}
+
 model Faculty {
   id                      String                   @id @default(uuid())
   userId                  String                   @unique
-  department              String?
   moodleId                String?                  @unique
   venue                   String?
   availableDate           DateTime?
@@ -70,6 +81,8 @@ model Pbl {
   teamFormationEnd   DateTime?
   isArchived         Boolean      @default(false)
   createdBy          String?
+  departmentId       String
+  department         Department   @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   registrationSchema Json?
   moodleCourseId     String?
   createdAt          DateTime     @default(now())
@@ -295,6 +308,7 @@ model MicroMentorEvaluation {
 }
 
 enum Role {
+  DEVELOPER
   SUPER_ADMIN
   ADMIN
   FACULTY

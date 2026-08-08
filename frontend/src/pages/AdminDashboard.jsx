@@ -276,7 +276,7 @@ const AdminDashboard = () => {
                             {fac.name}
                           </h4>
                           <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[180px]">
-                            {fac.department || fac.email}
+                            {fac.user?.department?.name || fac.email}
                           </p>
                         </div>
                       </div>
@@ -400,3 +400,4 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+

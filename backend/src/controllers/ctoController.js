@@ -3,6 +3,15 @@ const prisma = require('../config/db');
 // @desc    Get CTO Dashboard Metrics
 // @route   GET /api/cto/dashboard-metrics
 // @access  Private/CTO
+const getDeptFilter = (req, prefix = '') => {
+  if (req.query.departmentId && req.query.departmentId !== 'All') {
+    if (prefix) {
+      return { [prefix]: { departmentId: req.query.departmentId } };
+    }
+    return { departmentId: req.query.departmentId };
+  }
+  return {};
+};
 const getDashboardMetrics = async (req, res, next) => {
   try {
     const { pblId } = req.query;
@@ -45,14 +54,12 @@ const getDashboardMetrics = async (req, res, next) => {
         where: { phase: { pblId } }
       });
     } else {
-      totalStudents = await prisma.student.count();
-      totalTeams = await prisma.team.count();
-      studentsWithTeams = await prisma.teamMember.count({ where: { status: 'APPROVED' } });
-      teamsWithoutMentor = await prisma.team.count({ where: { mentorId: null } });
-      teams = await prisma.team.findMany({
-        include: { submissions: { include: { mentorGrades: true } } }
-      });
-      allEvaluations = await prisma.evaluation.findMany();
+      totalStudents = await prisma.student.count({ where: getDeptFilter(req, 'user') });
+      totalTeams = await prisma.team.count({ where: { pbl: getDeptFilter(req) } });
+      studentsWithTeams = await prisma.teamMember.count({ where: { status: 'APPROVED', ...getDeptFilter(req, 'user') } });
+      teamsWithoutMentor = await prisma.team.count({ where: { mentorId: null, pbl: getDeptFilter(req) } });
+      teams = await prisma.team.findMany({ where: { pbl: getDeptFilter(req) }, include: { submissions: { include: { mentorGrades: true } } } });
+      allEvaluations = await prisma.evaluation.findMany({ where: { phase: { pbl: getDeptFilter(req) } } });
     }
 
     let mentorApprovedCount = 0;
@@ -126,7 +133,7 @@ const getProjectsList = async (req, res, next) => {
   try {
     const { pblId } = req.query;
     
-    const whereClause = pblId ? { pblId } : {};
+    const whereClause = pblId ? { pblId } : { pbl: getDeptFilter(req) };
 
     const teams = await prisma.team.findMany({
       where: whereClause,
@@ -289,3 +296,4 @@ module.exports = {
   getPbls,
   getActivityLogs
 };
+

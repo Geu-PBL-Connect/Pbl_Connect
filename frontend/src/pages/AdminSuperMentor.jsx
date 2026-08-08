@@ -541,8 +541,8 @@ const AdminSuperMentor = () => {
                         />
                         <div className="truncate">
                           <p className="truncate font-semibold">{faculty.user?.name || faculty.designation || "Faculty"}</p>
-                          {faculty.department && (
-                            <p className="text-[10px] text-gray-400 truncate">{faculty.department}</p>
+                          {faculty.user?.department && (
+                            <p className="text-[10px] text-gray-400 truncate">{faculty.user?.department?.code}</p>
                           )}
                         </div>
                       </label>
@@ -635,7 +635,7 @@ const AdminSuperMentor = () => {
                           <option value="">-- No Super Mentor --</option>
                           {facultyList.map((f) => (
                             <option key={f.id} value={f.id}>
-                              {f.user?.name || "Faculty"} ({f.department || "Dept"})
+                              {f.user?.name || "Faculty"} ({f.user?.department?.code || "Dept"})
                             </option>
                           ))}
                         </select>
@@ -719,3 +719,4 @@ const AdminSuperMentor = () => {
 };
 
 export default AdminSuperMentor;
+
