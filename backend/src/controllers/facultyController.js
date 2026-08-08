@@ -780,7 +780,8 @@ const reviewSuperMentorTeam = async (req, res, next) => {
         });
 
         // Push Grade 1 to LMS
-        const mentorRemark = latestSubmission.mentorGrades?.[0]?.remarks;
+        const parsedGrade = latestSubmission.mentorGrades?.[0] ? parseMentorGradeRecord(latestSubmission.mentorGrades[0]) : null;
+        const mentorRemark = parsedGrade?.cleanRemarks;
         const moodleFeedback = feedback?.trim()
           ? `Approved by Mentor & Super Mentor. Super Mentor Note: ${feedback.trim()}`
           : (mentorRemark ? `Approved by Mentor: ${mentorRemark}` : "Approved by Mentor & Super Mentor");
