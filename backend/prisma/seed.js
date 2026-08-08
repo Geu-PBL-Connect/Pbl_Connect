@@ -1,7 +1,5 @@
-const { PrismaClient } = require('@prisma/client');
+const prisma = require('../src/config/db');
 const bcrypt = require('bcrypt');
-
-const prisma = new PrismaClient();
 
 async function main() {
   console.log('Seeding database...');
