@@ -30,6 +30,7 @@ import SuperAdminSettings from './pages/SuperAdminSettings';
 
 import CTOLayout from './components/CTOLayout';
 import CTODashboard from './pages/CTODashboard';
+import CTOLogs from './pages/CTOLogs';
 
 import DeveloperInfo from './components/DeveloperInfo';
 
@@ -52,6 +53,7 @@ function App() {
         <Route path="/cto" element={<CTOLayout />}>
           <Route index element={<Navigate to="/cto/dashboard" replace />} />
           <Route path="dashboard" element={<CTODashboard />} />
+          <Route path="logs" element={<CTOLogs />} />
         </Route>
 
         {/* Admin Routes */}

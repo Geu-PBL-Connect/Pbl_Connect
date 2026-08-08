@@ -326,6 +326,24 @@ const evaluateStudent = async (req, res, next) => {
       },
     });
 
+    try {
+      await prisma.activityLog.create({
+        data: {
+          entityType: 'EVALUATION',
+          entityId: evaluation.id,
+          action: existingEval ? 'GRADE_EDITED' : 'GRADED',
+          userId: req.user.id,
+          metadata: { 
+            studentId, 
+            phaseId,
+            totalMarks
+          }
+        }
+      });
+    } catch (logErr) {
+      console.error('Failed to log evaluation activity:', logErr);
+    }
+
     res.json({ message: "Evaluation submitted successfully", evaluation });
   } catch (error) {
     next(error);
@@ -396,6 +414,24 @@ const finishTeamEvaluation = async (req, res, next) => {
         where: { id: teamId },
         data: { projectLevel },
       });
+    }
+
+    try {
+      await prisma.activityLog.create({
+        data: {
+          entityType: 'EVALUATION',
+          entityId: updated.id,
+          action: isEdit ? 'TEAM_GRADE_EDITED' : 'TEAM_GRADED',
+          userId: req.user.id,
+          metadata: { 
+            teamId, 
+            phaseId,
+            projectLevel: projectLevel || null
+          }
+        }
+      });
+    } catch (logErr) {
+      console.error('Failed to log team evaluation finish:', logErr);
     }
 
     res.json({ message: "Team evaluation finished", evaluationState: updated });

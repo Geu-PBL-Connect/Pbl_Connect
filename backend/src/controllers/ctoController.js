@@ -251,9 +251,41 @@ const getPbls = async (req, res, next) => {
   }
 };
 
+const getActivityLogs = async (req, res, next) => {
+  try {
+    const logs = await prisma.activityLog.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 200 // Limit to 200 for performance on the frontend initially
+    });
+
+    // Optionally fetch user names to attach to logs if needed, but we can do a raw query or join.
+    // Since user table might be polymorphic, let's fetch user names from User table for the IDs
+    const userIds = [...new Set(logs.map(log => log.userId).filter(Boolean))];
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true, role: true }
+    });
+
+    const userMap = {};
+    users.forEach(u => {
+      userMap[u.id] = { name: u.name, role: u.role };
+    });
+
+    const enrichedLogs = logs.map(log => ({
+      ...log,
+      user: log.userId && userMap[log.userId] ? userMap[log.userId] : null
+    }));
+
+    res.json(enrichedLogs);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getDashboardMetrics,
   getStudentProfile,
   getProjectsList,
-  getPbls
+  getPbls,
+  getActivityLogs
 };

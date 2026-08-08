@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, Navigate, useLocation } from 'react-router-dom';
-import { LogOut, LayoutDashboard, Menu, X } from 'lucide-react';
+import { LogOut, LayoutDashboard, Menu, X, Activity } from 'lucide-react';
 import geuLogo from '../assets/geu-logo.webp';
 
 const CTOLayout = () => {
@@ -66,10 +66,17 @@ const CTOLayout = () => {
             <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-3">Main Menu</div>
             <a 
               href="/cto/dashboard"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group bg-[#fbc02d] text-[#1c1f58] font-bold shadow-md"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${location.pathname === '/cto/dashboard' ? 'bg-[#fbc02d] text-[#1c1f58] font-bold shadow-md' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`}
             >
-              <LayoutDashboard size={20} className="text-[#1c1f58]" />
+              <LayoutDashboard size={20} className={location.pathname === '/cto/dashboard' ? 'text-[#1c1f58]' : ''} />
               Dashboard
+            </a>
+            <a 
+              href="/cto/logs"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${location.pathname === '/cto/logs' ? 'bg-[#fbc02d] text-[#1c1f58] font-bold shadow-md' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`}
+            >
+              <Activity size={20} className={location.pathname === '/cto/logs' ? 'text-[#1c1f58]' : ''} />
+              System Logs
             </a>
           </nav>
           
@@ -111,11 +118,19 @@ const CTOLayout = () => {
           <nav className="flex-1 py-4 space-y-1 px-3 overflow-y-auto h-[calc(100%-130px)]">
             <a 
               href="/cto/dashboard"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group bg-[#fbc02d] text-[#1c1f58] font-bold"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${location.pathname === '/cto/dashboard' ? 'bg-[#fbc02d] text-[#1c1f58] font-bold' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`}
               onClick={() => setMobileMenuOpen(false)}
             >
-              <LayoutDashboard size={20} className="text-[#1c1f58]" />
+              <LayoutDashboard size={20} className={location.pathname === '/cto/dashboard' ? 'text-[#1c1f58]' : ''} />
               Dashboard
+            </a>
+            <a 
+              href="/cto/logs"
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group ${location.pathname === '/cto/logs' ? 'bg-[#fbc02d] text-[#1c1f58] font-bold' : 'text-gray-300 hover:bg-white/10 hover:text-white'}`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Activity size={20} className={location.pathname === '/cto/logs' ? 'text-[#1c1f58]' : ''} />
+              System Logs
             </a>
           </nav>
 
