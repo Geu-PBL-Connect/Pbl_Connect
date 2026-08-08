@@ -202,7 +202,8 @@ const bulkUploadUsers = async (req, res, next) => {
           email,
           passwordHash,
           role: roleEnum,
-          requiresPasswordChange: true
+          requiresPasswordChange: true,
+          departmentId: req.user.departmentId || null
         };
 
         if (roleEnum === 'STUDENT') {
@@ -211,7 +212,7 @@ const bulkUploadUsers = async (req, res, next) => {
           };
         } else {
           userData.facultyProfile = {
-            create: { department: 'General', moodleId: username }
+            create: { moodleId: username }
           };
         }
 
@@ -338,7 +339,8 @@ const bulkUploadUsersJson = async (req, res, next) => {
           email,
           passwordHash,
           role: roleEnum,
-          requiresPasswordChange: true
+          requiresPasswordChange: true,
+          departmentId: req.user.departmentId || null
         };
 
         if (roleEnum === 'STUDENT') {
@@ -347,7 +349,7 @@ const bulkUploadUsersJson = async (req, res, next) => {
           };
         } else {
           userData.facultyProfile = {
-            create: { department: 'General', moodleId: username }
+            create: { moodleId: username }
           };
         }
 
@@ -413,25 +415,25 @@ const bulkUploadUsersJson = async (req, res, next) => {
 const updateUser = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, email, section, department } = req.body;
+    const { name, email, section, departmentId } = req.body;
 
     const user = await prisma.user.findUnique({ where: { id }, include: { studentProfile: true, facultyProfile: true } });
     if (!user) return res.status(404).json({ message: 'User not found' });
 
+    let updateData = { name, email };
+    if (departmentId !== undefined) {
+      updateData.departmentId = departmentId || null;
+    }
+
     await prisma.user.update({
       where: { id },
-      data: { name, email }
+      data: updateData
     });
 
     if (user.role === 'STUDENT' && section) {
       await prisma.student.update({
         where: { userId: id },
         data: { section }
-      });
-    } else if (user.role === 'FACULTY' && department) {
-      await prisma.faculty.update({
-        where: { userId: id },
-        data: { department }
       });
     }
 
