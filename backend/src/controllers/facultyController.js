@@ -78,7 +78,7 @@ const getEvaluatedTeams = async (req, res, next) => {
   }
 };
 
-const { syncGradeToMoodle } = require("../services/moodleService");
+const { syncGradeToMoodle, syncTeamToMoodleGroup } = require("../services/moodleService");
 
 // Helper to push grade to Moodle for all team members
 const pushGradeToMoodleForTeam = async (teamId, phaseId, grade, feedbackText, submissionId) => {
@@ -120,6 +120,15 @@ const pushGradeToMoodleForTeam = async (teamId, phaseId, grade, feedbackText, su
         `${targetSubmission.id}/${signature}`;
 
       feedback += `\n\nSubmitted File (PBL Portal): ${portalUrl}`;
+    }
+
+    if (team?.teamName) {
+      const moodleIds = teamMembers
+        .map(m => m.student?.moodleId || m.student?.enrollmentNumber)
+        .filter(Boolean);
+      await syncTeamToMoodleGroup(team.teamName, phase.moodleAssignmentId, moodleIds).catch(err => 
+        console.error("Faculty moodle group sync err:", err)
+      );
     }
 
     for (const member of teamMembers) {
