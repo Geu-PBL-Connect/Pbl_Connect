@@ -326,6 +326,24 @@ const evaluateStudent = async (req, res, next) => {
       },
     });
 
+    try {
+      await prisma.activityLog.create({
+        data: {
+          entityType: 'EVALUATION',
+          entityId: evaluation.id,
+          action: existingEval ? 'GRADE_EDITED' : 'GRADED',
+          userId: req.user.id,
+          metadata: { 
+            studentId, 
+            phaseId,
+            totalMarks
+          }
+        }
+      });
+    } catch (logErr) {
+      console.error('Failed to log evaluation activity:', logErr);
+    }
+
     res.json({ message: "Evaluation submitted successfully", evaluation });
   } catch (error) {
     next(error);
@@ -396,6 +414,24 @@ const finishTeamEvaluation = async (req, res, next) => {
         where: { id: teamId },
         data: { projectLevel },
       });
+    }
+
+    try {
+      await prisma.activityLog.create({
+        data: {
+          entityType: 'EVALUATION',
+          entityId: updated.id,
+          action: isEdit ? 'TEAM_GRADE_EDITED' : 'TEAM_GRADED',
+          userId: req.user.id,
+          metadata: { 
+            teamId, 
+            phaseId,
+            projectLevel: projectLevel || null
+          }
+        }
+      });
+    } catch (logErr) {
+      console.error('Failed to log team evaluation finish:', logErr);
     }
 
     res.json({ message: "Team evaluation finished", evaluationState: updated });
@@ -926,6 +962,54 @@ const getTimelineWarnings = async (req, res, next) => {
     next(error);
   }
 };
+const exportEvaluatorMarks = async (req, res, next) => {
+  try {
+    const facultyId = req.user.facultyProfileId;
+    const { phaseId } = req.params;
+
+    const evaluations = await prisma.evaluation.findMany({
+      where: {
+        evaluatorId: facultyId,
+        phaseId: phaseId
+      },
+      include: {
+        student: true,
+        phase: {
+          include: { pbl: true }
+        }
+      }
+    });
+
+    const teams = await prisma.team.findMany({
+      where: {
+        members: {
+          some: {
+            id: { in: evaluations.map(e => e.studentId) }
+          }
+        }
+      },
+      include: { members: true }
+    });
+
+    const result = evaluations.map(ev => {
+      const student = ev.student;
+      const team = teams.find(t => t.members.some(m => m.id === student.id));
+      
+      return {
+        team: team?.teamIdFormatted || 'N/A',
+        studentName: student.name,
+        rollNo: student.enrollmentNumber,
+        marksData: ev.marksData,
+        totalMarks: ev.totalMarks,
+        evaluatedAt: ev.evaluatedAt
+      };
+    });
+
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
 
 module.exports = {
   getMentoredTeams,
@@ -945,4 +1029,5 @@ module.exports = {
   reviewSuperMentorTeam,
   checkSuperMentorRole,
   getTimelineWarnings,
+  exportEvaluatorMarks
 };

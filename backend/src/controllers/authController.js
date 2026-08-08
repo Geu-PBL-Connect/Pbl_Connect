@@ -324,6 +324,21 @@ const login = async (req, res, next) => {
 
     const token = generateToken(user.id);
 
+    // Log the login activity
+    try {
+      await prisma.activityLog.create({
+        data: {
+          entityType: 'USER',
+          entityId: user.id,
+          action: 'LOGIN',
+          userId: user.id,
+          metadata: { role: user.role, email: user.email }
+        }
+      });
+    } catch (logErr) {
+      console.error('Failed to log login activity:', logErr);
+    }
+
     res.json({
       id: user.id,
       name: user.name,

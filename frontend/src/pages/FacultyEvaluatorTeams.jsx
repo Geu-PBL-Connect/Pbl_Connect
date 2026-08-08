@@ -2,14 +2,74 @@ import { openPrivateFile } from "../utils/fileViewer";
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { MapPin } from 'lucide-react';
+import { MapPin, Download } from 'lucide-react';
 
 const FacultyEvaluatorTeams = () => {
   const [teams, setTeams] = useState([]);
   const [reevaluations, setReevaluations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activePhaseFilter, setActivePhaseFilter] = useState(1);
+  const [selectedPbl, setSelectedPbl] = useState('All');
+  const [exporting, setExporting] = useState(false);
   const [activeTab, setActiveTab] = useState('ASSIGNED'); // 'ASSIGNED' | 'REEVALUATIONS'
+
+  const handleExportEvaluatedResults = async () => {
+    try {
+      setExporting(true);
+      
+      let pblForExport = selectedPbl !== 'All' 
+        ? teams.find(t => t.pbl.id === selectedPbl)?.pbl
+        : teams[0]?.pbl;
+
+      const phase = pblForExport?.phases?.find(p => p.phaseNumber === activePhaseFilter);
+
+      if (!phase) {
+        alert("Phase details not found.");
+        return;
+      }
+      
+      const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+      const res = await axios.get(`/api/faculty/evaluator/export-marks/${phase.id}`, {
+        headers: { Authorization: `Bearer ${userInfo.token}` }
+      });
+
+      const data = res.data;
+      if (!data || data.length === 0) {
+        alert("No evaluated students found for this phase.");
+        return;
+      }
+
+      // Prepare headers (excluding dynamic marksData fields to keep it simple, or including them)
+      const dynamicFields = Array.from(new Set(data.flatMap(d => Object.keys(d.marksData || {}))));
+      const headers = ["Team", "Student Name", "Roll No", ...dynamicFields, "Total Marks"];
+
+      const rows = data.map(d => {
+        return [
+          d.team,
+          d.studentName,
+          d.rollNo,
+          ...dynamicFields.map(f => d.marksData?.[f] !== undefined ? d.marksData[f] : 'N/A'),
+          d.totalMarks
+        ].map(val => `"${val}"`).join(",");
+      });
+
+      const csvContent = [headers.join(","), ...rows].join("\n");
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Phase_${activePhaseFilter}_Evaluated_Results.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+    } catch (error) {
+      console.error(error);
+      alert("Failed to export results");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   // Venue & Schedule State
   const [showVenueModal, setShowVenueModal] = useState(false);
@@ -292,12 +352,21 @@ const FacultyEvaluatorTeams = () => {
           )}
         </div>
 
-        <button 
-          onClick={() => setShowVenueModal(true)} 
-          className="px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 shadow-sm flex items-center justify-center gap-2 text-xs shrink-0"
-        >
-          <MapPin className="w-3.5 h-3.5" /> Set Location / Venue
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={handleExportEvaluatedResults}
+            disabled={exporting}
+            className="px-4 py-2 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-bold rounded-lg hover:bg-green-100 dark:hover:bg-green-900/50 border border-green-200 dark:border-green-800 shadow-sm flex items-center justify-center gap-2 text-xs shrink-0 disabled:opacity-50"
+          >
+            <Download className="w-3.5 h-3.5" /> {exporting ? 'Exporting...' : 'Export Results'}
+          </button>
+          <button 
+            onClick={() => setShowVenueModal(true)} 
+            className="px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 border border-blue-200 dark:border-blue-800 shadow-sm flex items-center justify-center gap-2 text-xs shrink-0"
+          >
+            <MapPin className="w-3.5 h-3.5" /> Set Location / Venue
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}

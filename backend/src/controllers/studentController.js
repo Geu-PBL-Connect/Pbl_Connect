@@ -488,6 +488,24 @@ const submitPhase = async (req, res, next) => {
       });
     }
 
+    try {
+      await prisma.activityLog.create({
+        data: {
+          entityType: 'SUBMISSION',
+          entityId: submission.id,
+          action: 'SUBMITTED',
+          userId: req.user.id,
+          metadata: { 
+            teamId: team.id, 
+            teamFormatted: team.teamIdFormatted,
+            phaseNumber: phase.phaseNumber 
+          }
+        }
+      });
+    } catch (logErr) {
+      console.error('Failed to log submission activity:', logErr);
+    }
+
     res.status(201).json({ message: "Submission successful", submission });
 
     // Background sync to Moodle if phase is linked to Moodle Assignment

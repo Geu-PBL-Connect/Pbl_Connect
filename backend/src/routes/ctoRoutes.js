@@ -19,4 +19,7 @@ router.get('/pbl', ctoController.getPbls);
 // Student 360 Profile
 router.get('/student-profile/:rollNo', ctoController.getStudentProfile);
 
+// CTO Activity Logs
+router.get('/logs', ctoController.getActivityLogs);
+
 module.exports = router;

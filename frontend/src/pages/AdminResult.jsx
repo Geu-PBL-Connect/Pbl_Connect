@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Search, X } from 'lucide-react';
+import { Search, X, Download } from 'lucide-react';
 
 const AdminResult = () => {
   const [pbls, setPbls] = useState([]);
@@ -100,6 +100,37 @@ const AdminResult = () => {
     return phase?.evaluationCriteria || [];
   };
 
+  const handleExportCSV = () => {
+    if (!marksData || marksData.length === 0) return;
+    
+    // Prepare headers
+    const headers = ["Team", "Student", "Roll No", "Project Level", "Mentor Marks", "Evaluator Total Marks", "Avg Mentor Marks"];
+    
+    // Prepare rows
+    const rows = marksData.map(m => {
+      const pd = m.phases[activeMarksPhase];
+      return [
+        m.teamIdFormatted || '',
+        m.name || '',
+        m.enrollmentNumber || '',
+        m.projectLevel || 'N/A',
+        pd?.studentMentorMarks !== undefined && pd?.studentMentorMarks !== null ? pd.studentMentorMarks : 'N/A',
+        pd?.evaluatorTotalMarks !== undefined && pd?.evaluatorTotalMarks !== null ? pd.evaluatorTotalMarks : 'N/A',
+        pd?.teamAverageMentorMarks !== undefined && pd?.teamAverageMentorMarks !== null ? pd.teamAverageMentorMarks : 'N/A'
+      ].map(val => `"${val}"`).join(",");
+    });
+    
+    const csvContent = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Phase_${activeMarksPhase}_Results.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-6 fade-in max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-8">
@@ -143,16 +174,23 @@ const AdminResult = () => {
                  </button>
                ))}
              </div>
-
-             <div className="relative w-full sm:w-72">
-               <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-               <input
-                 type="text"
-                 placeholder="Search student, roll no, team..."
-                 value={searchQuery}
-                 onChange={(e) => setSearchQuery(e.target.value)}
-                 className="w-full pl-9 pr-8 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-lg dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
-               />
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <button
+                  onClick={handleExportCSV}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-bold transition-colors shadow-sm whitespace-nowrap"
+                >
+                  <Download className="w-4 h-4" />
+                  Export CSV
+                </button>
+                <div className="relative w-full sm:w-64">
+                  <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="Search student, roll no, team..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-8 py-2 text-xs border border-gray-200 dark:border-gray-700 rounded-lg dark:bg-gray-700 dark:text-white outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
                {searchQuery && (
                  <button
                    onClick={() => setSearchQuery('')}
