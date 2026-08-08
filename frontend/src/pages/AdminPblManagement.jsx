@@ -14,8 +14,13 @@ const AdminPblManagement = () => {
     subjectShort: '',
     semester: 3,
     session: '',
-    moodleCourseId: ''
+    moodleCourseId: '',
+    departmentId: ''
   });
+  const [departments, setDepartments] = useState([]);
+  const userInfo = JSON.parse(localStorage.getItem('userInfo')) || {};
+  const isDeveloper = userInfo.role === 'DEVELOPER' || userInfo.role === 'SUPER_ADMIN';
+
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState(null);
 
@@ -40,6 +45,15 @@ const AdminPblManagement = () => {
 
   useEffect(() => {
     fetchPbls();
+    if (isDeveloper) {
+      const fetchDepts = async () => {
+        try {
+          const res = await axios.get('/api/departments', { headers: { Authorization: `Bearer ${userInfo.token}` } });
+          setDepartments(res.data);
+        } catch(err) { console.error('Failed to fetch departments', err); }
+      };
+      fetchDepts();
+    }
   }, []);
 
   const handleSubmit = async (e) => {
@@ -58,7 +72,7 @@ const AdminPblManagement = () => {
       setShowModal(false);
       setIsEditing(false);
       setEditId(null);
-      setFormData({ subject: '', subjectShort: '', semester: 3, session: '', moodleCourseId: '' });
+      setFormData({ subject: '', subjectShort: '', semester: 3, session: '', moodleCourseId: '', departmentId: '' });
       fetchPbls();
     } catch (err) {
       console.error('Failed to save PBL', err);
@@ -74,7 +88,8 @@ const AdminPblManagement = () => {
       subjectShort: pbl.subjectShort,
       semester: pbl.semester,
       session: pbl.session,
-      moodleCourseId: pbl.moodleCourseId || ''
+      moodleCourseId: pbl.moodleCourseId || '',
+      departmentId: pbl.departmentId || ''
     });
     setShowModal(true);
   };
@@ -167,7 +182,7 @@ const AdminPblManagement = () => {
               onClick={() => {
                 setIsEditing(false);
                 setEditId(null);
-                setFormData({ subject: '', subjectShort: '', semester: 3, session: '', moodleCourseId: '' });
+                setFormData({ subject: '', subjectShort: '', semester: 3, session: '', moodleCourseId: '', departmentId: '' });
                 setShowModal(true);
               }}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow flex items-center justify-center gap-2 text-xs font-semibold shrink-0"
@@ -314,6 +329,24 @@ const AdminPblManagement = () => {
                 />
                 <p className="text-xs text-gray-500 mt-1">If provided, students will be automatically enrolled when they form a team.</p>
               </div>
+              
+              {isDeveloper && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Department</label>
+                  <select
+                    required
+                    value={formData.departmentId}
+                    onChange={e => setFormData({...formData, departmentId: e.target.value})}
+                    className="w-full px-4 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
+                  >
+                    <option value="">Select Department</option>
+                    {departments.map(d => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div className="flex justify-end gap-3 mt-6">
                 <button type="button" onClick={() => {
                   setShowModal(false);

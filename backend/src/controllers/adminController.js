@@ -79,8 +79,16 @@ const createPbl = async (req, res, next) => {
       instructions,
       teamFormationStart,
       teamFormationEnd,
-      moodleCourseId
+      moodleCourseId,
+      departmentId
     } = req.body;
+
+    const pblDepartmentId = req.user.role === 'ADMIN' ? req.user.departmentId : departmentId;
+    
+    if (!pblDepartmentId) {
+      res.status(400);
+      throw new Error('Department ID is required to create a PBL.');
+    }
 
     const pbl = await prisma.pbl.create({
       data: {
@@ -94,7 +102,7 @@ const createPbl = async (req, res, next) => {
         teamFormationEnd: teamFormationEnd ? new Date(teamFormationEnd) : null,
         moodleCourseId: moodleCourseId || null,
         createdBy: req.user.id,
-        departmentId: req.user.departmentId,
+        departmentId: pblDepartmentId,
         phases: {
           create: [
             { phaseNumber: 1, instructions: 'Phase 1 instructions pending...', evaluationCriteria: [] },
