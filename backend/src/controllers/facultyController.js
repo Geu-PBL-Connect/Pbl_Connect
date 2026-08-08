@@ -105,8 +105,8 @@ const pushGradeToMoodleForTeam = async (teamId, phaseId, grade, feedbackText, su
 
     const team = await prisma.team.findUnique({ where: { id: teamId } });
     let feedback = feedbackText || (grade === 1 ? "Approved" : "Rejected");
-    if (team?.teamName) {
-      feedback = `[Team: ${team.teamName}]\n${feedback}`;
+    if (team?.teamIdFormatted) {
+      feedback = `[Team: ${team.teamIdFormatted}]\n${feedback}`;
     }
 
     if (targetSubmission?.synopsisUrl) {
@@ -122,11 +122,11 @@ const pushGradeToMoodleForTeam = async (teamId, phaseId, grade, feedbackText, su
       feedback += `\n\nSubmitted File (PBL Portal): ${portalUrl}`;
     }
 
-    if (team?.teamName) {
+    if (team?.teamIdFormatted) {
       const moodleIds = teamMembers
         .map(m => m.student?.moodleId || m.student?.enrollmentNumber)
         .filter(Boolean);
-      await syncTeamToMoodleGroup(team.teamName, phase.moodleAssignmentId, moodleIds).catch(err => 
+      await syncTeamToMoodleGroup(team.teamIdFormatted, phase.moodleAssignmentId, moodleIds).catch(err => 
         console.error("Faculty moodle group sync err:", err)
       );
     }
